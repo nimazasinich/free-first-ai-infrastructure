@@ -1,5 +1,7 @@
 # Execution tracker
 
+Current work follows [Master Plan v10](MASTER_PLAN.md). See the [post-reinstall execution checkpoint](docs/master-plan-v10-execution.md) for P0–P8. The entries below document the earlier deployment, including pre-reinstall native PIDs, tests and resources.
+
 Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds measured on the VPS. The direct calls used the native loopback API. The public calls used the full HTTPS path through Caddy, Edge Guard, 9Router and the private bridge.
 
 ## Deployment and acceptance
