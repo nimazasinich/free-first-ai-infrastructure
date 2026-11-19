@@ -14,7 +14,7 @@ flowchart LR
     Studio -->|Eligible account| Google[Google AI Studio Playground]
 ```
 
-- [Authoritative execution plan](MASTER_PLAN_V9_AUTONOMOUS_EXECUTION.md)
+- [Authoritative master architecture and execution plan](MASTER_PLAN.md)
 - [Live verification and delivery status](EXECUTION_TRACKER.md)
 - [Deployment and rollback runbook](docs/runbook.md)
 - [Windows client dependency and migration matrix](docs/client-migration.md)
