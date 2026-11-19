@@ -1,0 +1,19 @@
+[Unit]
+Description=Private allowlist bridge from clean 9Router to AIStudio2API
+After=network-online.target aistudio2api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/9router-clean/bridge.py
+LoadCredential=upstream-key:/opt/9router-clean/upstream.key
+DynamicUser=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

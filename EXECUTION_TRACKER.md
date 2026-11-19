@@ -1,17 +1,27 @@
-# Execution Tracker — V9 Autonomous Deployment
+# Execution tracker
 
-Evidence is from the owner workstation SSH session on 2026-11-19. Codex Cloud still cannot open TCP 22. No secret values are recorded here.
+Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds measured on the VPS. The direct calls used the native loopback API. The public calls used the full HTTPS path through Caddy, Edge Guard, 9Router and the private bridge.
 
-| Phase | Purpose | Status | Evidence (timestamp, redacted) |
-|---|---|---|---|
-| P0 | Cloud-to-VPS connectivity; SSH/admin/API discovery; topology and baseline | PARTIAL | 2026-11-19: Workstation key login to `srv4503740909` as root succeeded. Codex Cloud probes returned connection refused before the server. AIStudio2API `/health` stayed HTTP 200. |
-| P1 | Official digest/version verification | PASS | Official `decolua/9router` `0.5.119` `linux/amd64` digest `sha256:f98847db83f7ec9f1b36f78850a26c77c6502197163dff6eaa76d0ea199de3a0`. |
-| P2 | Blank official 9Router install / new credentials and storage | PASS | Container `9router-clean` listens only on `127.0.0.1:20228`. New SQLite under `/opt/9router-clean/data`. `/api/health` returned `{"ok":true}`. No legacy database was imported. |
-| P3 | Private Caddy-to-AIStudio2API integration | PASS | Private Caddy listener `172.20.0.1:20230` forwards only `/v1/models`, `/v1/chat/completions`, and `/v1/responses` to the local allowlist bridge, then to unchanged `127.0.0.1:2048`. |
-| P4 | App auth and free-only deny-before-forward tests | PARTIAL | Missing client key returns 401. Requests for `gemini-3.1-pro-preview` and an unknown model stop at the bridge with 403 `model is not allowlisted`. The public model list still advertises built-in `mmf` and `oc` aliases, and `mmf/mimo-auto` returned 502 after an external bootstrap attempt. |
-| P5 | Streaming/tool-calling/minimal real tests | PARTIAL | One canary model, `free/gemini-3.8-flash`, returned a real tool call and a stream ending in `[DONE]`. A plain short completion returned HTTP 200 with empty text and finish reason `length`. |
-| P6 | Caddy endpoint integration, client cutover, rollback verification | PARTIAL | `r9` API policy now forwards to `127.0.0.1:20228`. Public `/v1/models` on `r9.185-221-237-84.sslip.io` answered 200 through the new router. The previous Edge Guard binary is saved as `/usr/local/sbin/edge-guard.before-9router-clean`. OmniRoute routes were not switched. |
-| P7 | Remove OmniRoute, Redis exclusive assets, legacy 9Router and old data | NOT_RUN | Legacy containers are still running. They were not removed because the plain-text canary is only partial and OmniRoute still owns its own public hostname. |
-| P8 | Recovery, as-built topology, handoff | PARTIAL | `9router-clean-bridge.service` is enabled. Container restart policy is still `no` until the plain-text completion is repeated successfully. |
+## Deployment and acceptance
 
-AIStudio2API was not modified. No legacy 9Router or OmniRoute data was imported.
+- **A — Access and inspection | PASS.** Strict Windows SSH reached the expected VPS. The GitHub CLI reported administrator access and the repository cloned successfully. The running official 9Router image matched the pinned digest, revision and version 0.5.119. [Upstream source revision](https://github.com/decolua/9router/commit/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c)
+- **B — Gateway policy | PASS.** The canary key is restricted to `free/gemini-3.8-flash`. The authenticated gateway catalog lists exactly that model. The SQLite database holds one active provider, one restricted active key and zero combos. Missing and invalid keys returned 401. Pro, built-in and unknown model IDs returned 403 on both generation routes. Unsupported public routes returned 404 and wrong methods returned 405. The 37-case negative run recorded zero bridge forwards to the native API. The same suite passed after restart.
+- **C — AIStudio2API integration | PASS.** The real authenticated model was available from the native service. The private bridge filters the catalog to one model, checks its upstream bearer and accepts the exact approved model ID. The clean container could reach the private path. Direct external HTTPS and an unrelated host port failed, with matching nftables drop counters. An external domain did not resolve from the container. The AIStudio2API PID and start time matched the baseline and its health endpoint returned 200.
+- **D — Live SSE | PASS.** Direct and full-gateway Chat streams completed, as did both Responses streams. Controlled fixture tests proved early delivery of a partial tool-call delta before the upstream finished. The live measurements below quantify actual delivery and normal variation between requests.
+- **D — Authentication and persistence after restart | PASS.** Restarted only the clean 9Router container and private bridge. Verified healthy startup, the same restricted application key, the one-model catalog, zero forwards for negative probes and the `unless-stopped` policy. Host reboot was **NOT_RUN**.
+- **D — Configuration and resources | PASS.** Compose validation and deployment, Python checks, service readiness, nftables validation and Caddy fragment validation passed. A post-adoption sample showed 74.53 MiB of container memory as reported by Docker, 0.02% CPU and 11 PIDs. Root filesystem was 67% used with 19 GiB available at preflight.
+- **D — Billing | PARTIAL.** The gateway has one private upstream and zero combos. Direct container egress is blocked. The native route used the already configured AIStudio2API Playground model. No Google Developer API, Vertex or external fallback was configured. Provider invoice or account-level billing evidence was outside these API tests.
+- **D — Recovery | PARTIAL.** A local clean SQLite backup passed `quick_check` as written, and a separate in-memory restore also passed. Retained the prior stopped clean container and bridge/edge snapshots. Full client or legacy rollback was **NOT_RUN**.
+- **E — Client cutover | BLOCKED.** The deployed legacy MCP clients expose combo and service-management functions absent from the single-model canary. Client replacement and actual agent validation remain open.
+- **F — Legacy retirement | BLOCKED.** Active configuration still points at the old services. [Legacy dependency assessment](docs/legacy-retirement.md)
+- **G — Repository synchronization | PARTIAL.** This revision contains the deployment files and live checks. Final tool, retry and publication evidence is tracked in the pull request.
+
+## Live streaming samples
+
+- **Before bridge change, Chat, 256 token cap.** Direct first event 2,824 ms, first content 4,240 ms, end 4,251 ms. Public first event and first content 3,788 ms, end 3,790 ms. The two public content events arrived within the same millisecond. Both probes reached the length cap.
+- **After bridge change, same Chat request.** Direct first event 3,772 ms, first content 4,828 ms, end 4,840 ms. Public first event 3,093 ms, first content 3,957 ms, end 3,981 ms. Both probes reached the length cap. These single pairs measure independent generations.
+- **After bridge change, Chat, 1,024 token cap.** Direct first event 2,232 ms, first content 4,356 ms, end 4,491 ms. Public first event 2,982 ms, first content 5,163 ms, end 5,274 ms. Two public content events arrived 86 ms apart. Both ended with `stop`.
+- **After bridge change, Responses, 1,024 token cap.** Direct first event 10,001 ms, first content 66,174 ms, end 66,261 ms. Public first event 8,069 ms, first content 9,857 ms, end 10,006 ms. Two public content events arrived 116 ms apart. Both reported `response.completed`.
+- **After restart, Chat.** Public first event 3,224 ms, first content 4,749 ms, end 4,853 ms. Two content events arrived 88 ms apart. Finish reason was `stop`.
+
+The 866 ms gap between first event and first content on the same public Chat request after the fix, the separated live content events, and the controlled early-event fixture establish incremental delivery. Independent upstream generations have very different latency, particularly on Responses. These samples do not establish a latency guarantee.

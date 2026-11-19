@@ -1,0 +1,16 @@
+table inet free_first_gateway
+delete table inet free_first_gateway
+table inet free_first_gateway {
+    chain input {
+        type filter hook input priority -10; policy accept;
+        iifname $clean_bridge ct state established,related accept
+        iifname $clean_bridge ip daddr 172.20.0.1 tcp dport 20230 counter accept
+        iifname $clean_bridge counter drop
+        ip daddr 172.20.0.1 tcp dport 20230 counter drop
+    }
+
+    chain forward {
+        type filter hook forward priority -10; policy accept;
+        iifname $clean_bridge counter drop
+    }
+}
