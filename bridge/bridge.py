@@ -195,6 +195,7 @@ class Bridge(BaseHTTPRequestHandler):
                         self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
                         self.wfile.flush()
                     if cancelled.is_set():
+                        outcome = "downstream_cancelled"
                         return
                     if reply.length not in (None, 0):
                         raise IncompleteRead(b"", reply.length)
@@ -220,7 +221,9 @@ class Bridge(BaseHTTPRequestHandler):
                 self.wfile.write(data)
             except (OSError, HTTPException, ValueError, TypeError, KeyError) as error:
                 outcome = "transport_failed"
-                if isinstance(error, (TimeoutError, socket.timeout)):
+                if cancelled.is_set():
+                    outcome = "downstream_cancelled"
+                elif isinstance(error, (TimeoutError, socket.timeout)):
                     outcome = "upstream_timeout"
                 if not started_reply and not cancelled.is_set():
                     with suppress(OSError):
@@ -233,7 +236,7 @@ class Bridge(BaseHTTPRequestHandler):
                         "route": self.path, "model": model, "native_status": upstream_status,
                         "headers_ms": headers_ms, "first_chunk_ms": first_chunk_ms,
                         "elapsed_ms": round((monotonic() - started) * 1000),
-                        "outcome": "downstream_cancelled" if cancelled.is_set() else outcome,
+                        "outcome": outcome,
                     }, separators=(",", ":")), flush=True)
 
 
