@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Private, authenticated AIStudio2API transport for the single approved model."""
+"""Private, authenticated AIStudio2API transport for the approved model allowlist."""
 from functools import partial
 from http.client import HTTPConnection, HTTPException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,6 +10,8 @@ from pathlib import Path
 
 
 MODEL = "gemini-3.8-flash"
+PILOT_MODEL = "gemini-3.5-flash-lite"
+MODELS = frozenset({MODEL, PILOT_MODEL})
 POST_ROUTES = {"/v1/chat/completions", "/v1/responses"}
 MAX_BODY = 6 * 1024 * 1024
 MAX_REPLY = 16 * 1024 * 1024
@@ -97,7 +99,7 @@ class Bridge(BaseHTTPRequestHandler):
         if len(body) != length or not isinstance(payload, dict):
             self._error(400, "Expected a complete JSON object")
             return
-        if payload.get("model") != MODEL:
+        if payload.get("model") not in MODELS:
             self._error(403, "Model unavailable")
             return
         # Forward the parsed object so duplicate keys cannot produce different policies.
@@ -147,9 +149,12 @@ class Bridge(BaseHTTPRequestHandler):
                 return
             if reply.status == 200 and self.path == "/v1/models":
                 catalog = json.loads(data)
+                approved = {
+                    entry["id"]: entry for entry in catalog["data"] if entry["id"] in MODELS
+                }
                 data = json.dumps({
                     "object": "list",
-                    "data": [entry for entry in catalog["data"] if entry["id"] == MODEL],
+                    "data": [approved[model_id] for model_id in sorted(approved)],
                 }).encode()
             started_reply = True
             self._headers(reply.status, content_type, length=len(data), retry_after=retry_after)

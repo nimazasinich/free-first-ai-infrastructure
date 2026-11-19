@@ -29,6 +29,7 @@ Baseline `b32c859`. Observations are from the installed Windows clients and the 
 - **DEFERRED — Native Cursor model provider.** Owner deferred native OpenAI base-URL testing. A temporary Phase 2 `settings.json` change pointing at the clean gateway was restored from `native-chat-backup-20261119T152630Z` to the original AIStudio endpoint and `cursor-combo-vps` models. SHA-256 matched the pre-change baseline. No native Chat PASS was claimed.
 - **PASS — Free-First MCP after restore.** `gateway_models` still returned only `free/gemini-3.8-flash` after the settings restore.
 - **NOT_RUN — Additional Flash client migrations.** No remaining OmniRoute Codex profile requires exactly `free/gemini-3.8-flash`. Other flash-named profiles target different model IDs and were not remapped. [Legacy dependency matrix](legacy-retirement.md)
+- **PASS — Phase 4 pilot isolation.** Existing Windows Codex and Cursor Free-First keys remain flash-only. The separate `free-first-pilot-lite` credential is limited to `free/gemini-3.5-flash-lite` and is not installed into Cursor MCP or Codex profiles. Production clients were not broadened. [Model eligibility matrix](model-eligibility-matrix.md)
 
 ## Windows installation and rollback
 

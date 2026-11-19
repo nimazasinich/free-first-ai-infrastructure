@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from configure import ACCESS, dashboard
+from configure import ACCESS, ALLOWED_ACCESS, dashboard
 from probe import local_state
 
 
@@ -14,13 +14,17 @@ def provision(root, client):
     admin = dashboard(root)
     name = "free-first-windows-" + client
     keys = admin("/api/keys")["keys"]
-    if any(key["isActive"] and key["access"] != ACCESS for key in keys):
+    if any(key["isActive"] and key["access"] not in ALLOWED_ACCESS for key in keys):
         raise RuntimeError("An active key has unexpected model access")
     existing = [key for key in keys if key["name"] == name]
     if len(existing) > 1 or (existing and not existing[0]["isActive"]):
         raise RuntimeError("Check the existing account-specific key state")
     if existing:
         key = existing[0]
+        if key["access"] != ACCESS:
+            key = admin("/api/keys/" + key["id"], "PUT", {"access": ACCESS})["key"]
+            if key["access"] != ACCESS:
+                raise RuntimeError("Existing Windows key did not stay flash-only")
     else:
         key = admin("/api/keys", "POST", {"name": name})
         endpoint = "/api/keys/" + key["id"]
@@ -36,7 +40,7 @@ def provision(root, client):
     with tempfile.NamedTemporaryFile(mode="w", dir=output, delete=False) as data:
         data.write(key["key"] + "\n")
     os.replace(data.name, output / (client + ".key"))
-    print(f"{client} key restricted to the approved model")
+    print(f"{client} key restricted to the approved production model")
 
 
 if __name__ == "__main__":

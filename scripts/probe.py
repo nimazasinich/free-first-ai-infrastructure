@@ -10,6 +10,8 @@ import urllib.request
 
 
 MODEL = "gemini-3.8-flash"
+PILOT_MODEL = "gemini-3.5-flash-lite"
+MODELS = frozenset({MODEL, PILOT_MODEL})
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -118,14 +120,20 @@ def main():
     parser.add_argument("--public-url", required=True)
     parser.add_argument("--responses", action="store_true")
     parser.add_argument("--max-tokens", type=int, default=256)
+    parser.add_argument("--model", choices=("production", "pilot"), default="production")
     args = parser.parse_args()
     upstream_key, canary_key = local_state(args.root)
-    for label, base, key, model in (
-        ("direct", "http://127.0.0.1:2048", upstream_key, MODEL),
-        ("gateway_https", args.public_url, canary_key, "free/" + MODEL),
+    model = PILOT_MODEL if args.model == "pilot" else MODEL
+    alias = "free/" + model
+    key = canary_key
+    if args.model == "pilot":
+        key = (args.root / "client-keys" / "pilot-lite.key").read_text().strip()
+    for label, base, auth, target in (
+        ("direct", "http://127.0.0.1:2048", upstream_key, model),
+        ("gateway_https", args.public_url, key, alias),
     ):
-        result = stream(base, key, model, args.responses, args.max_tokens)
-        print(json.dumps({"path": label, **result}), flush=True)
+        result = stream(base, auth, target, args.responses, args.max_tokens)
+        print(json.dumps({"path": label, "model": target, **result}), flush=True)
 
 
 if __name__ == "__main__":

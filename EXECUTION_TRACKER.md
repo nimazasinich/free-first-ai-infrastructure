@@ -55,3 +55,19 @@ Native Cursor model-provider work was deferred by the owner. A temporary Phase 2
 - **Legacy service retirement | BLOCKED.** OmniRoute, Redis, the candidate, egress, webhook, cron, and public Caddy routes remain. No container was stopped. Measured reclaim: none. Current samples: OmniRoute about 402 MiB, Redis about 13 MiB, candidate about 23 MiB, clean gateway about 108 MiB. Root still 38G used / 18G free.
 - **Gateway regression | PASS.** `acceptance.py --public-url https://r9.185-221-237-84.sslip.io policy` exited 0 with zero rejected upstream forwards. `gateway_models` still returned only `free/gemini-3.8-flash`.
 - **AIStudio2API | PASS unchanged.** PID `1994530`, start `Wed 2026-11-18 17:35:38 UTC`, health `{"status":"ok"}`.
+
+## Phase 4 multi-model pilot on 2026-11-19
+
+Outcome **A** — safe multi-model pilot. Production flash policy stayed intact. No combo and no paid provider were enabled. [Model eligibility matrix](docs/model-eligibility-matrix.md)
+
+- **Inventory | PASS.** Native authenticated catalog still listed 92 models. Safety monitor reported 10 accounts (7 free-scoped, 3 Argon-scoped, 0 overlap), channel `playground`, hedge off, and zero active cooldowns. Live `.env` had no Developer API, Vertex, or billing-charge secrets.
+- **Candidate selection | PASS for lite; BLOCKED for others.** `gemini-3.5-flash-lite` was `CATALOG_VISIBLE`, `ACCOUNT_ELIGIBLE` on 7 free-scoped accounts, and `EXECUTION_VERIFIED` on Playground. Argon/Hydrogen and unbound flash variants stayed `BILLING_UNVERIFIED` or unbound and were not enabled.
+- **Billing gate | PARTIAL / accepted for Playground free-scope pilot.** One private upstream, zero combos, container egress still restricted, native channel `playground` on both production and pilot live rows. Router `cost` remains accounting, not an invoice. Google project invoices stayed **UNKNOWN**.
+- **Implementation | PASS.** Bridge allowlist became `{gemini-3.8-flash, gemini-3.5-flash-lite}`. `configure.py` registers both custom models, keeps the three production keys flash-only, and provisions `free-first-pilot-lite` for lite only. Backup: `/root/free-first-phase4-backup-20261119T155728Z`.
+- **Policy acceptance | PASS.** Expanded deny suite on the local router plus a smaller public edge sample. Production keys received 403 for the pilot alias. Pilot key received 403 for flash and forbidden models. Rejected upstream forwards: 0. Catalogs: native 92, bridge 2, canary 1 flash, pilot 1 lite.
+- **Pilot live execution | PASS.** Public pilot Chat and Responses streams completed on `free/gemini-3.5-flash-lite` (Chat ~1.0 s, Responses ~1.1 s). Native ledger showed `playground` / HTTP 200.
+- **Production regression | PASS.** Public flash Chat/Responses streams and structured tool round-trip remained valid. Chat first content was slow on that single sample (~389 s headers-to-content) but completed with `stop`.
+- **Account-aware cooldown / failover | PASS observed, no gateway rewrite.** AIStudio2API already owns account selection; cooldowns were 0 at inspection. Bridge still maps retryable upstream 502/503/504 to one terminal 500 and preserves `Retry-After`. No model-failover combo was enabled.
+- **Security | PASS.** Invalid/missing keys 401. Forbidden models 403. Existing client keys unchanged. Pilot credential not wired into Cursor MCP or Codex.
+- **Resources | PASS.** Clean container ~110 MiB after acceptance. AIStudio2API PID `1994530` unchanged. Root still ~38G used / 18G free.
+- **Rollback | PASS rehearsable.** Pre-pilot bridge and SQLite backup retained. Bridge-only restart kept scoped catalogs. Pilot can be revoked by deactivating `free-first-pilot-lite` without touching flash keys.

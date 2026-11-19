@@ -4,7 +4,7 @@ import json
 import threading
 import unittest
 
-from bridge.bridge import MODEL, make_server
+from bridge.bridge import MODEL, MODELS, PILOT_MODEL, make_server
 
 
 class MockUpstream(BaseHTTPRequestHandler):
@@ -13,7 +13,9 @@ class MockUpstream(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.server.calls.append((self.command, self.path))
-        catalog = json.dumps({"data": [{"id": MODEL}, {"id": "other"}]}).encode()
+        catalog = json.dumps({
+            "data": [{"id": MODEL}, {"id": PILOT_MODEL}, {"id": "other"}],
+        }).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
@@ -75,7 +77,17 @@ class BridgeTests(unittest.TestCase):
     def test_catalog_filters_unapproved_models(self):
         with self.call("/v1/models") as reply:
             self.assertEqual(reply.status, 200)
-            self.assertEqual(json.load(reply)["data"], [{"id": MODEL}])
+            self.assertEqual(
+                json.load(reply)["data"],
+                [{"id": model_id} for model_id in sorted(MODELS)],
+            )
+
+    def test_pilot_model_is_forwarded(self):
+        with self.call("/v1/chat/completions", {"model": PILOT_MODEL, "stream": True}) as reply:
+            self.assertEqual(reply.status, 200)
+            self.mock.release.set()
+            reply.read()
+        self.assertEqual(self.mock.calls, [("POST", "/v1/chat/completions")])
 
     def test_sse_delivers_tool_delta_before_upstream_finishes(self):
         try:
