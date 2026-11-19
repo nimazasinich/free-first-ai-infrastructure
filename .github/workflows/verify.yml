@@ -16,3 +16,5 @@ jobs:
       - run: python3 -m unittest discover -s tests -v
       - run: node --check tests/router-fault.cjs
       - run: node --check tests/router-recovery.cjs
+      - run: node --check client/free-first-mcp.mjs
+      - run: node --test tests/codex-transport.test.mjs

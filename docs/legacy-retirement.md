@@ -2,9 +2,13 @@
 
 **BLOCKED** as of 2026-11-19.
 
-- Codex and Cursor configurations still declare the OmniRoute bridge and legacy 9Router combo MCP servers. The OmniRoute client uses combo chat and service-specific management APIs, including compression settings and cache statistics. The new model canary exposes one approved model and zero combos. An ephemeral direct Codex canary passed. The existing MCP workflows still require a compatible replacement.
+- The dedicated Codex profile and the exact supported saved Flash profile now use the clean gateway. Cursor has a persistent clean MCP registration. The original Windows configurations still contain old combo and management integrations. The workstation has 95 remaining OmniRoute profiles and two disabled matching scheduled tasks. [Client dependency matrix](client-migration.md)
 - Caddy still has legacy OmniRoute API and UI routes, an OmniRoute hook, and a legacy 9Router dashboard route on a separate listener. Edge Guard still references their upstreams. An empty socket sample does not establish the absence of consumers.
 - The legacy candidate has a dedicated data mount, private bridge and egress service. OmniRoute and its Redis share an exclusive-looking Compose network, with Redis attached to a named volume. Treat exclusivity as provisional until timers, hooks, mounts and other callers are reconciled.
-- The legacy candidate, OmniRoute and Redis were observed running. No legacy state was copied into the clean gateway.
+- The legacy candidate, OmniRoute and Redis were observed running. Both legacy networks contained only their named router components during inspection. Docker reported each image as attached only to its corresponding container, and the OmniRoute Compose Redis data volume as attached only to its Redis container. The candidate retains a separate bind mount and active egress service.
+- The VPS has active OmniRoute root-crontab entries for nightly backups and a five-minute resource watcher. The configured OmniRoute webhook was enabled and points to the live ops ingest route. The latest recorded webhook delivery and ingest event were on November 8 UTC.
+- A read-only usage check recorded two OmniRoute Chat generation rows in the last seven days, with statuses 200 and 499, and zero legacy 9Router generation rows. Both OmniRoute requests used named credentials that were not labeled as probes. The most recent was November 17 UTC. Admin, dashboard and WebSocket consumers remain outside those counts.
+
+No controlled stop or resource deletion has been performed. The incomplete application tests and unresolved OmniRoute consumers remain retirement gates.
 
 For retirement, first verify replacement client workflows and identify remaining service, route, webhook and scheduled-job owners. Create and verify a root-only recovery copy for each exclusive data store. Perform reversible container stops with current restart semantics documented, rerun gateway and unrelated health checks, and verify the restore sequence. Remove only identified exclusive resources after those checks.
