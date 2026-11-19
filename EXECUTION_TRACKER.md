@@ -11,6 +11,13 @@ Current work follows [Master Plan v10](MASTER_PLAN.md). See the [post-reinstall 
 
 Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds measured on the VPS. The direct calls used the native loopback API. The public calls used the full HTTPS path through Caddy, Edge Guard, 9Router and the private bridge.
 
+## Flash latency follow-up, 2026-11-19
+
+- **PASS.** Independently verified the association in a fixed 64-request journal window. Median native duration was 3.675 s on Free-scoped finishing seats and 185.587 s on Pro-scoped finishing seats. The fresh 303.616 s delay was Playground response-header wait. Provider-internal cause remains **UNKNOWN**.
+- **PASS.** The published bridge revision matched the deployed hash and passed isolated failure fixtures. The live rerun forwarded a single request and propagated cancellation.
+- **FAIL.** The prior Codex continuation switched accounts after an upstream 403 and stalled at the next Pro-scoped seat. The one rerun failed before its tool call. Fresh continuation and resume were **NOT_RUN** in the rerun.
+- **BLOCKED.** No scope change was authorized. The isolated comparison and its quota/capacity tradeoffs are recorded in the [investigation report](docs/flash-account-latency-investigation.md).
+
 ## Deployment and acceptance
 
 - **A — Access and inspection | PASS.** Strict Windows SSH reached the expected VPS. The GitHub CLI reported administrator access and the repository cloned successfully. The running official 9Router image matched the pinned digest, revision and version 0.5.119. [Upstream source revision](https://github.com/decolua/9router/commit/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c)
