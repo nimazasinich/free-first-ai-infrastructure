@@ -1,8 +1,10 @@
 import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import socket
 import threading
 import unittest
+from unittest.mock import patch
 
 from bridge.bridge import MODEL, MODELS, PILOT_MODEL, make_server
 
@@ -24,6 +26,32 @@ class MockUpstream(BaseHTTPRequestHandler):
     def do_POST(self):
         self.server.calls.append((self.command, self.path))
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if body.get("truncate"):
+            chunk = b"data: first\n\n"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Content-Length", str(len(chunk) + 10))
+            self.end_headers()
+            self.wfile.write(chunk)
+            return
+        if body.get("reset"):
+            self.connection.shutdown(socket.SHUT_RDWR)
+            return
+        if body.get("disconnect_fixture"):
+            if body["disconnect_fixture"] == "during_stream":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.end_headers()
+                self.wfile.write(b"data: first\n\n")
+                self.wfile.flush()
+            self.server.waiting.set()
+            self.connection.settimeout(2)
+            try:
+                if not self.connection.recv(1):
+                    self.server.disconnected.set()
+            except TimeoutError:
+                pass
+            return
         if "mock_status" in body:
             self.send_response(body["mock_status"])
             self.send_header("Retry-After", "17")
@@ -44,6 +72,8 @@ class BridgeTests(unittest.TestCase):
         self.mock = ThreadingHTTPServer(("127.0.0.1", 0), MockUpstream)
         self.mock.calls = []
         self.mock.release = threading.Event()
+        self.mock.waiting = threading.Event()
+        self.mock.disconnected = threading.Event()
         self.bridge = make_server(("127.0.0.1", 0), self.mock.server_address, "test-key")
         for server in (self.mock, self.bridge):
             threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -64,6 +94,7 @@ class BridgeTests(unittest.TestCase):
         for path, model, key, status in (
             ("/v1/chat/completions", "blocked", "test-key", 403),
             ("/v1/responses", "free/" + MODEL, "test-key", 403),
+            ("/v1/responses", [], "test-key", 403),
             ("/v1/responses", MODEL, "", 401),
             ("/v1/responses", MODEL, "invalid", 401),
             ("/v1/responses?extra=1", MODEL, "test-key", 404),
@@ -120,6 +151,52 @@ class BridgeTests(unittest.TestCase):
                     self.assertEqual(reply.headers["Retry-After"], "17")
                     self.assertIn(str(status), json.load(reply)["error"]["message"])
         self.assertEqual(len(self.mock.calls), 3)
+
+    def test_upstream_silent_headers_time_out_once(self):
+        with patch("bridge.bridge.UPSTREAM_IO_TIMEOUT", 0.25):
+            with self.call("/v1/responses", {"model": MODEL, "disconnect_fixture": "before_headers"}) as reply:
+                self.assertEqual(reply.status, 500)
+        self.assertTrue(self.mock.disconnected.wait(1))
+        self.assertEqual(len(self.mock.calls), 1)
+
+    def test_truncated_sse_does_not_end_cleanly(self):
+        with self.call("/v1/responses", {"model": MODEL, "truncate": True}) as reply:
+            self.assertEqual(reply.status, 200)
+            self.assertEqual(reply.readline(), b"data: first\n")
+            with self.assertRaises(http.client.IncompleteRead):
+                reply.read()
+        self.assertEqual(len(self.mock.calls), 1)
+
+    def test_upstream_disconnect_before_headers_is_terminal(self):
+        with self.call("/v1/responses", {"model": MODEL, "reset": True}) as reply:
+            self.assertEqual(reply.status, 500)
+            self.assertEqual(json.load(reply)["error"]["message"], "Upstream transport failed")
+        self.assertEqual(len(self.mock.calls), 1)
+
+    def test_client_disconnect_closes_silent_upstream(self):
+        for phase in ("before_headers", "during_stream"):
+            with self.subTest(phase=phase):
+                self.mock.waiting.clear()
+                self.mock.disconnected.clear()
+                body = json.dumps({"model": MODEL, "disconnect_fixture": phase}).encode()
+                headers = (
+                    "POST /v1/chat/completions HTTP/1.1\r\n"
+                    "Host: localhost\r\nAuthorization: Bearer test-key\r\n"
+                    f"Content-Type: application/json\r\nContent-Length: {len(body)}\r\n\r\n"
+                ).encode()
+                with socket.create_connection(self.bridge.server_address, timeout=2) as client:
+                    client.sendall(headers + body)
+                    self.assertTrue(self.mock.waiting.wait(1))
+                    if phase == "during_stream":
+                        with client.makefile("rb") as reply:
+                            for line in reply:
+                                if b"data: first" in line:
+                                    break
+                            else:
+                                self.fail("bridge closed before sending the first SSE frame")
+                    client.shutdown(socket.SHUT_RDWR)
+                self.assertTrue(self.mock.disconnected.wait(1), "upstream socket stayed open")
+        self.assertEqual(len(self.mock.calls), 2)
 
     def test_redirect_fails_closed(self):
         with self.call("/v1/responses", {"model": MODEL, "mock_status": 302}) as reply:
