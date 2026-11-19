@@ -1,6 +1,6 @@
 # Legacy retirement assessment
 
-**BLOCKED** as of 2026-11-19 15:36 UTC. No container, route, cron job, webhook, or live MCP registration was stopped or deleted. Native Cursor model-provider work is deferred and is not a retirement gate.
+**BLOCKED.** The assessment below is the 2026-11-19 15:36 UTC historical inventory. See the [v10 checkpoint](master-plan-v10-execution.md) for current deployment and dependency evidence. No container, route, cron job, webhook, or live MCP registration was stopped or deleted. Native Cursor model-provider work is deferred and is not a retirement gate.
 
 ## Dependency matrix
 

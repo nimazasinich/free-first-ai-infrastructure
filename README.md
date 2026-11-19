@@ -16,6 +16,7 @@ flowchart LR
 
 - [Authoritative master architecture and execution plan](MASTER_PLAN.md)
 - [Live verification and delivery status](EXECUTION_TRACKER.md)
+- [Master Plan v10 execution checkpoint](docs/master-plan-v10-execution.md)
 - [Deployment and rollback runbook](docs/runbook.md)
 - [Windows client dependency and migration matrix](docs/client-migration.md)
 - [Legacy retirement assessment](docs/legacy-retirement.md)

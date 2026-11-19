@@ -1,6 +1,6 @@
 # Model eligibility and failover matrix
 
-Verified on 2026-11-19 against the live AIStudio2API loopback API and the clean gateway. Account identifiers are omitted; counts and hashed load-balance labels are used instead.
+The tables below are the historical Phase 4 snapshot from before the fresh official release. See the [v10 checkpoint](master-plan-v10-execution.md) for current configuration and post-reinstall execution evidence. Account identifiers are omitted.
 
 ## Status vocabulary
 
