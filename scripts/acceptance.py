@@ -5,8 +5,9 @@ from http.client import HTTPException
 import json
 from pathlib import Path
 import subprocess
+import time
 
-from probe import MODEL, local_state, request, stream
+from probe import MODEL, MODELS, PILOT_MODEL, local_state, request, stream
 
 
 BRIDGE = "http://127.0.0.1:20231"
@@ -15,6 +16,8 @@ UPSTREAM = "http://127.0.0.1:2048"
 CHAT = "/v1/chat/completions"
 RESPONSES = "/v1/responses"
 ALIAS = "free/" + MODEL
+PILOT_ALIAS = "free/" + PILOT_MODEL
+BRIDGE_CATALOG = sorted(MODELS)
 
 
 def log(**row):
@@ -39,29 +42,85 @@ def journal(*args):
     )
 
 
-def policy(public, upstream_key, canary):
+def load_models(base, key, attempts=4):
+    delay = 2
+    for attempt in range(attempts):
+        with request(base, "/v1/models", key) as reply:
+            if reply.status == 429 and attempt + 1 < attempts:
+                time.sleep(delay)
+                delay = min(delay * 2, 15)
+                continue
+            if reply.status != 200:
+                return reply.status, []
+            payload = reply.read()
+            try:
+                models = [entry["id"] for entry in json.loads(payload).get("data", [])]
+            except (ValueError, TypeError, AttributeError):
+                return reply.status, []
+            return reply.status, models
+    return 429, []
+
+
+def policy(public, upstream_key, canary, pilot_key=None):
     cursor_line = journal("-n", "1", "--show-cursor").splitlines()[-1]
     cursor = cursor_line.removeprefix("-- cursor: ")
     if not cursor or cursor == cursor_line:
         raise RuntimeError("Bridge journal cursor unavailable")
     passed = True
-    for label, base in (("public", public), ("router", GATEWAY)):
-        for path in (CHAT, RESPONSES):
-            for key, model, expected in (
-                (None, ALIAS, 401),
-                ("invalid-canary-key", ALIAS, 401),
-                (canary, "free/gemini-3.1-pro-preview", 403),
-                (canary, "mmf/mimo-auto", 403),
-                (canary, "oc/unauthorized", 403),
-                (canary, "free/not-an-approved-model", 403),
+    # Full negative matrix on the local router. Keep the public edge sample small so
+    # Edge Guard rate limits do not turn an expanded deny suite into false failures.
+    deny_cases = (
+        (None, ALIAS, 401),
+        ("invalid-canary-key", ALIAS, 401),
+        (canary, "free/gemini-3.1-pro-preview", 403),
+        (canary, "mmf/mimo-auto", 403),
+        (canary, "oc/unauthorized", 403),
+        (canary, "free/not-an-approved-model", 403),
+        (canary, PILOT_ALIAS, 403),
+    )
+    for path in (CHAT, RESPONSES):
+        for key, model, expected in deny_cases:
+            actual = status(GATEWAY, path, key, body_for(model, path))
+            log(check="deny", layer="router", path=path, model=model, expected=expected, status=actual)
+            passed &= actual == expected
+        if pilot_key:
+            for model, expected in (
+                (ALIAS, 403),
+                ("free/gemini-3.1-pro-preview", 403),
+                ("free/not-an-approved-model", 403),
             ):
-                actual = status(base, path, key, body_for(model, path))
-                log(check="deny", layer=label, path=path, model=model, expected=expected, status=actual)
+                actual = status(GATEWAY, path, pilot_key, body_for(model, path))
+                log(
+                    check="pilot_deny", layer="router", path=path, model=model,
+                    expected=expected, status=actual,
+                )
                 passed &= actual == expected
-        for key in (None, "invalid-canary-key"):
-            actual = status(base, "/v1/models", key)
-            log(check="catalog_auth", layer=label, expected=401, status=actual)
-            passed &= actual == 401
+    for key in (None, "invalid-canary-key"):
+        actual = status(GATEWAY, "/v1/models", key)
+        log(check="catalog_auth", layer="router", expected=401, status=actual)
+        passed &= actual == 401
+
+    public_cases = (
+        (None, ALIAS, 401),
+        ("invalid-canary-key", ALIAS, 401),
+        (canary, "free/gemini-3.1-pro-preview", 403),
+        (canary, PILOT_ALIAS, 403),
+    )
+    for key, model, expected in public_cases:
+        actual = status(public, CHAT, key, body_for(model, CHAT))
+        log(check="deny", layer="public", path=CHAT, model=model, expected=expected, status=actual)
+        passed &= actual == expected
+    if pilot_key:
+        actual = status(public, CHAT, pilot_key, body_for(ALIAS, CHAT))
+        log(check="pilot_deny", layer="public", path=CHAT, model=ALIAS, expected=403, status=actual)
+        passed &= actual == 403
+    for key in (None, "invalid-canary-key"):
+        actual = status(public, "/v1/models", key)
+        # Edge Guard may answer 429 under burst; that still denies an unauthenticated catalog.
+        ok = actual in (401, 429)
+        log(check="catalog_auth", layer="public", expected="401|429", status=actual, ok=ok)
+        passed &= ok
+
     for path, method, expected in (
         ("/api/settings", "GET", 404), ("/v1/embeddings", "POST", 404),
         (CHAT, "GET", 405), (RESPONSES, "DELETE", 405),
@@ -83,17 +142,29 @@ def policy(public, upstream_key, canary):
     log(check="rejected_upstream_forwards", count=forwards)
     passed &= forwards == 0
 
+    time.sleep(3)
     for label, base, key, expected in (
         ("direct", UPSTREAM, upstream_key, MODEL),
-        ("bridge", BRIDGE, upstream_key, MODEL),
-        ("router", GATEWAY, canary, ALIAS),
-        ("public", public, canary, ALIAS),
+        ("bridge", BRIDGE, upstream_key, BRIDGE_CATALOG),
+        ("router", GATEWAY, canary, [ALIAS]),
+        ("public", public, canary, [ALIAS]),
     ):
-        with request(base, "/v1/models", key) as reply:
-            models = [entry["id"] for entry in json.load(reply).get("data", [])]
-            valid = expected in models if label == "direct" else models == [expected]
-            log(check="catalog", layer=label, status=reply.status, count=len(models), expected_present=valid)
-            passed &= reply.status == 200 and valid
+        code, models = load_models(base, key)
+        if label == "direct":
+            valid = expected in models
+        else:
+            valid = models == expected
+        log(check="catalog", layer=label, status=code, count=len(models), expected_present=valid)
+        passed &= code == 200 and valid
+    if pilot_key:
+        code, models = load_models(public, pilot_key)
+        valid = models == [PILOT_ALIAS]
+        log(check="catalog", layer="public_pilot", status=code, count=len(models), expected_present=valid)
+        passed &= code == 200 and valid
+        code, models = load_models(GATEWAY, pilot_key)
+        valid = models == [PILOT_ALIAS]
+        log(check="catalog", layer="router_pilot", status=code, count=len(models), expected_present=valid)
+        passed &= code == 200 and valid
     return passed
 
 
@@ -181,12 +252,35 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path("/opt/9router-clean"))
     parser.add_argument("--public-url", required=True)
-    parser.add_argument("--layer", choices=("direct", "public"))
-    parser.add_argument("suite", choices=("policy", "real", "tools", "restart"))
+    parser.add_argument("--layer", choices=("direct", "public", "public_pilot"))
+    parser.add_argument("suite", choices=("policy", "real", "tools", "restart", "pilot"))
     args = parser.parse_args()
     upstream_key, canary = local_state(args.root)
+    pilot_path = args.root / "client-keys" / "pilot-lite.key"
+    pilot_key = pilot_path.read_text().strip() if pilot_path.is_file() else None
     if args.suite == "policy":
-        return policy(args.public_url, upstream_key, canary)
+        return policy(args.public_url, upstream_key, canary, pilot_key)
+    if args.suite == "pilot":
+        if not pilot_key:
+            log(check="pilot_key", present=False)
+            return False
+        passed = True
+        for label, base, key, model in (
+            ("direct", UPSTREAM, upstream_key, PILOT_MODEL),
+            ("public_pilot", args.public_url, pilot_key, PILOT_ALIAS),
+        ):
+            if args.layer and label != args.layer:
+                continue
+            for responses in (False, True):
+                protocol = "responses" if responses else "chat"
+                try:
+                    result = stream(base, key, model, responses, max_tokens=256)
+                    log(check="live_stream", layer=label, protocol=protocol, model=model, **result)
+                    passed &= result["complete"] and result["content_events"] > 0
+                except (OSError, HTTPException, ValueError) as error:
+                    log(check="live_stream", layer=label, protocol=protocol, failure=type(error).__name__)
+                    passed = False
+        return passed
     passed = True
     for label, base, key, model in (
         ("direct", UPSTREAM, upstream_key, MODEL),
