@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Private, authenticated AIStudio2API transport for the approved model allowlist."""
+from contextlib import ExitStack, contextmanager, suppress
 from functools import partial
-from http.client import HTTPConnection, HTTPException
+from http.client import HTTPConnection, HTTPException, IncompleteRead
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import hmac
 import json
 import os
 from pathlib import Path
+from selectors import DefaultSelector, EVENT_READ
+import socket
+from threading import Event, Thread
+from time import monotonic
 
 
 MODEL = "gemini-3.8-flash"
@@ -16,6 +21,7 @@ POST_ROUTES = {"/v1/chat/completions", "/v1/responses"}
 MAX_BODY = 6 * 1024 * 1024
 MAX_REPLY = 16 * 1024 * 1024
 ROUTER_RETRY_CODES = {502, 503, 504}
+UPSTREAM_IO_TIMEOUT = 115
 
 
 class Bridge(BaseHTTPRequestHandler):
@@ -99,7 +105,8 @@ class Bridge(BaseHTTPRequestHandler):
         if len(body) != length or not isinstance(payload, dict):
             self._error(400, "Expected a complete JSON object")
             return
-        if payload.get("model") not in MODELS:
+        model = payload.get("model")
+        if not isinstance(model, str) or model not in MODELS:
             self._error(403, "Model unavailable")
             return
         # Forward the parsed object so duplicate keys cannot produce different policies.
@@ -108,10 +115,40 @@ class Bridge(BaseHTTPRequestHandler):
         except (ValueError, RecursionError):
             self._error(400, "Invalid JSON values")
             return
-        self._forward(body)
+        self._forward(body, model)
 
-    def _forward(self, body=None):
-        conn = HTTPConnection(*self.upstream, timeout=115)
+    @contextmanager
+    def _watch_disconnect(self, upstream_socket, cancelled):
+        # A read blocked on upstream headers or a quiet SSE body cannot see a
+        # downstream close. Shutdown wakes that read and cancels the native call.
+        stop_reader, stop_writer = socket.socketpair()
+        with stop_reader, stop_writer, DefaultSelector() as ready:
+            ready.register(self.connection, EVENT_READ)
+            ready.register(stop_reader, EVENT_READ)
+
+            def watch():
+                readers = {key.fileobj for key, _ in ready.select()}
+                if stop_reader in readers:
+                    return
+                try:
+                    if self.connection.recv(1, socket.MSG_PEEK):
+                        return
+                except OSError:
+                    pass
+                cancelled.set()
+                with suppress(OSError):
+                    upstream_socket.shutdown(socket.SHUT_RDWR)
+
+            watcher = Thread(target=watch, daemon=True)
+            watcher.start()
+            try:
+                yield
+            finally:
+                stop_writer.close()
+                watcher.join()
+
+    def _forward(self, body=None, model=None):
+        conn = HTTPConnection(*self.upstream, timeout=UPSTREAM_IO_TIMEOUT)
         headers = {
             "Authorization": self.authorization.decode(),
             "Accept": "application/json, text/event-stream",
@@ -120,54 +157,88 @@ class Bridge(BaseHTTPRequestHandler):
         if body is not None:
             headers["Content-Type"] = "application/json"
         started_reply = False
-        try:
-            conn.request(self.command, self.path, body=body, headers=headers)
-            print(f"forwarded {self.command} {self.path}", flush=True)
-            reply = conn.getresponse()
-            content_type = reply.headers.get("Content-Type", "application/json")
-            retry_after = reply.headers.get("Retry-After")
-            if 300 <= reply.status < 400:
-                self._error(500, "Unexpected upstream redirect")
-                return
-            if reply.status in ROUTER_RETRY_CODES:
-                # Stock 9Router replays generation on these statuses. Report the
-                # original status in the error while avoiding a second native call.
-                self._error(500, f"AIStudio2API returned HTTP {reply.status}", retry_after)
-                return
-            if reply.status == 200 and reply.headers.get_content_type() == "text/event-stream":
-                started_reply = True
-                self._headers(reply.status, content_type)
-                for chunk in iter(lambda: reply.read1(65536), b""):
-                    self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
-                    self.wfile.flush()
-                self.wfile.write(b"0\r\n\r\n")
-                return
+        started = monotonic()
+        headers_ms = first_chunk_ms = upstream_status = None
+        outcome = "complete"
+        cancelled = Event()
+        with ExitStack() as resources:
+            resources.callback(conn.close)
+            try:
+                conn.connect()
+                if body is not None:
+                    resources.enter_context(self._watch_disconnect(conn.sock, cancelled))
+                conn.request(self.command, self.path, body=body, headers=headers)
+                print(f"forwarded {self.command} {self.path}", flush=True)
+                reply = resources.enter_context(conn.getresponse())
+                headers_ms = round((monotonic() - started) * 1000)
+                upstream_status = reply.status
+                if reply.status >= 400:
+                    outcome = "upstream_http_error"
+                content_type = reply.headers.get("Content-Type", "application/json")
+                retry_after = reply.headers.get("Retry-After")
+                if 300 <= reply.status < 400:
+                    outcome = "redirect_rejected"
+                    self._error(500, "Unexpected upstream redirect")
+                    return
+                if reply.status in ROUTER_RETRY_CODES:
+                    outcome = "retryable_status_mapped"
+                    # Stock 9Router replays generation on these statuses. Report the
+                    # original status in the error while avoiding a second native call.
+                    self._error(500, f"AIStudio2API returned HTTP {reply.status}", retry_after)
+                    return
+                if reply.status == 200 and reply.headers.get_content_type() == "text/event-stream":
+                    started_reply = True
+                    self._headers(reply.status, content_type)
+                    for chunk in iter(lambda: reply.read1(65536), b""):
+                        if first_chunk_ms is None:
+                            first_chunk_ms = round((monotonic() - started) * 1000)
+                        self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
+                        self.wfile.flush()
+                    if cancelled.is_set():
+                        outcome = "downstream_cancelled"
+                        return
+                    if reply.length not in (None, 0):
+                        raise IncompleteRead(b"", reply.length)
+                    self.wfile.write(b"0\r\n\r\n")
+                    return
 
-            data = reply.read(MAX_REPLY + 1)
-            if len(data) > MAX_REPLY:
-                self._error(500, "Upstream response exceeded limit")
-                return
-            if reply.status == 200 and self.path == "/v1/models":
-                catalog = json.loads(data)
-                approved = {
-                    entry["id"]: entry for entry in catalog["data"] if entry["id"] in MODELS
-                }
-                data = json.dumps({
-                    "object": "list",
-                    "data": [approved[model_id] for model_id in sorted(approved)],
-                }).encode()
-            started_reply = True
-            self._headers(reply.status, content_type, length=len(data), retry_after=retry_after)
-            self.wfile.write(data)
-        except (BrokenPipeError, ConnectionResetError):
-            self.close_connection = True
-        except (OSError, HTTPException, ValueError, TypeError, KeyError):
-            if not started_reply:
-                self._error(500, "Upstream transport failed")
-            # End a failed active stream without a terminating chunk.
-            self.close_connection = True
-        finally:
-            conn.close()
+                data = reply.read(MAX_REPLY + 1)
+                if len(data) > MAX_REPLY:
+                    outcome = "oversized_reply"
+                    self._error(500, "Upstream response exceeded limit")
+                    return
+                if reply.status == 200 and self.path == "/v1/models":
+                    catalog = json.loads(data)
+                    approved = {
+                        entry["id"]: entry for entry in catalog["data"] if entry["id"] in MODELS
+                    }
+                    data = json.dumps({
+                        "object": "list",
+                        "data": [approved[model_id] for model_id in sorted(approved)],
+                    }).encode()
+                started_reply = True
+                self._headers(reply.status, content_type, length=len(data), retry_after=retry_after)
+                self.wfile.write(data)
+            except (OSError, HTTPException, ValueError, TypeError, KeyError) as error:
+                outcome = "transport_failed"
+                if cancelled.is_set():
+                    outcome = "downstream_cancelled"
+                elif isinstance(error, (TimeoutError, socket.timeout)):
+                    outcome = "upstream_timeout"
+                if not started_reply and not cancelled.is_set():
+                    with suppress(OSError):
+                        self._error(500, "Upstream transport failed")
+                # An interrupted SSE response ends without a terminating chunk.
+                self.close_connection = True
+            finally:
+                if model is not None:
+                    print("transport " + json.dumps({
+                        "route": self.path, "model": model, "native_status": upstream_status,
+                        "headers_ms": headers_ms, "first_chunk_ms": first_chunk_ms,
+                        "elapsed_ms": round((monotonic() - started) * 1000),
+                        "outcome": outcome,
+                    }, separators=(",", ":")), flush=True)
+
 
 
 def make_server(bind, upstream, credential):
