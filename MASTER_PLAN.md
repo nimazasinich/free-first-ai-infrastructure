@@ -218,7 +218,7 @@ The private bridge currently:
 - Preserves real SSE and `Retry-After`.
 - Maps selected native HTTP `502/503/504` responses to **terminal 500** to avoid repeated stock-9Router upstream sends.
 
-This is an intentional safety workaround, **not** proof that all retries are optimal. It also means a naïve 9Router Fallback combo expecting 502/503/504 may **not** activate as documented. Never add a model combo without an isolated end-to-end failure-injection test of the bridge's actual responses. Changing bridge semantics must not create retry storms or duplicate non-idempotent calls.
+This controls same-model retry amplification. The pinned 9Router fixture separately verified that a terminal 500 can trigger a Combo's cross-model fallback. Promotion requires an opt-in access policy, a capability-compatible pair and a stream failure contract. See the [execution checkpoint](docs/master-plan-v10-execution.md#p4p6--candidate-failover-and-protocol-gates). Changing bridge semantics must not create retry storms or duplicate non-idempotent calls.
 
 ### Tier C — model-to-model failover (planned, not enabled)
 

@@ -1,6 +1,13 @@
 # Execution tracker
 
-Current work follows [Master Plan v10](MASTER_PLAN.md). See the [post-reinstall execution checkpoint](docs/master-plan-v10-execution.md) for P0–P8. The entries below document the earlier deployment, including pre-reinstall native PIDs, tests and resources.
+Current work follows [Master Plan v10](MASTER_PLAN.md). See the [post-reinstall execution checkpoint](docs/master-plan-v10-execution.md) for P0–P8. The earlier entries below document the pre-reinstall native PIDs, tests and resources.
+
+## V10 rollout, 2026-11-19
+
+- **PASS.** Reconciled the fresh runtime, merged the authoritative plan, deployed the private bridge cancellation fix, and verified four restricted client keys with zero rejected forwards.
+- **PASS with exceptions.** Fresh Flash and Lite completed direct and public Chat/Responses and public Chat tool continuation. Flash first-content latency reached 304.599 s on one request. One public Responses sample timed out before a bounded retry passed.
+- **PARTIAL.** Cursor scoped MCP catalog and Codex tool discovery passed. Installed Codex continuation failed after a native first-event stall. Bridge-to-native cancellation was confirmed. Fresh resume remains unverified.
+- **BLOCKED.** Candidate model promotion needs entitlement and billing evidence, live Combo fallback needs a compatible opt-in pair, and protocol expansion needs credential scoping. Legacy retirement still has unresolved consumers. See the [execution checkpoint](docs/master-plan-v10-execution.md) for deployment hashes and the resumption point.
 
 Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds measured on the VPS. The direct calls used the native loopback API. The public calls used the full HTTPS path through Caddy, Edge Guard, 9Router and the private bridge.
 

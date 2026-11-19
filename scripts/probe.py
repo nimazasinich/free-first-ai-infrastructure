@@ -68,8 +68,9 @@ def stream(base, key, model, responses=False, max_tokens=256):
         content_type = reply.headers.get_content_type()
         first_event = first_content = last_content = None
         events = content_events = 0
-        done = False
+        done = failed = False
         finish = None
+        response_models = set()
         if reply.status == 200 and content_type == "text/event-stream":
             for line in reply:
                 if not line.startswith(b"data:"):
@@ -80,14 +81,24 @@ def stream(base, key, model, responses=False, max_tokens=256):
                 events += 1
                 data = line[5:].strip()
                 if data == b"[DONE]":
-                    done = True
+                    if not responses:
+                        done = True
                     continue
                 if not data:
                     continue
                 event = json.loads(data)
+                event_type = event.get("type")
+                reported_model = event.get("model") or (event.get("response") or {}).get("model")
+                if isinstance(reported_model, str):
+                    response_models.add(reported_model)
+                if event.get("error") or event_type in (
+                    "error", "response.failed", "response.incomplete", "response.cancelled",
+                ):
+                    failed = True
+                    finish = event_type or "error"
                 choice = (event.get("choices") or [{}])[0]
                 content = choice.get("delta", {}).get("content")
-                if event.get("type") == "response.output_text.delta":
+                if event_type == "response.output_text.delta":
                     content = event.get("delta")
                 if content:
                     if first_content is None:
@@ -95,9 +106,9 @@ def stream(base, key, model, responses=False, max_tokens=256):
                     last_content = current
                     content_events += 1
                 finish = choice.get("finish_reason") or finish
-                if event.get("type") in ("response.completed", "response.incomplete"):
-                    done = event["type"] == "response.completed"
-                    finish = event["type"]
+                if event_type == "response.completed":
+                    done = True
+                    finish = event_type
         ended = time.monotonic()
         return {
             "status": reply.status,
@@ -109,7 +120,10 @@ def stream(base, key, model, responses=False, max_tokens=256):
             "total_ms": round((ended - started) * 1000),
             "events": events,
             "content_events": content_events,
-            "complete": done,
+            "complete": done and not failed and (
+                responses or finish in ("stop", "length", "tool_calls", "function_call")
+            ),
+            "response_models": sorted(response_models),
             "finish": finish,
         }
 

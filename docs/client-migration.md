@@ -31,6 +31,10 @@ Baseline `b32c859`. Observations are from the installed Windows clients and the 
 - **NOT_RUN — Additional Flash client migrations.** No remaining OmniRoute Codex profile requires exactly `free/gemini-3.8-flash`. Other flash-named profiles target different model IDs and were not remapped. [Legacy dependency matrix](legacy-retirement.md)
 - **PASS — Phase 4 pilot isolation.** Existing Windows Codex and Cursor Free-First keys remain flash-only. The separate `free-first-pilot-lite` credential is limited to `free/gemini-3.5-flash-lite` and is not installed into Cursor MCP or Codex profiles. Production clients were not broadened. [Model eligibility matrix](model-eligibility-matrix.md)
 
+## Application onboarding
+
+Use the public `/v1` origin and the exact model alias granted to the application. Each newly approved app needs a dedicated restricted key with the intended scope verified before distribution. Store it in the application's credential store and confirm its model catalog, a 403 for a different approved model, and one bounded call through the app's actual protocol. Revoke the key from the local 9Router dashboard when the app is retired. The current approved public protocols are Chat Completions and Responses. See the [v10 checkpoint](master-plan-v10-execution.md) for the latest live and fixture results.
+
 ## Windows installation and rollback
 
 - Run `scripts/provision_client.py codex` and `scripts/provision_client.py cursor` with the local gateway dashboard on the VPS. Run [the Windows installer](../client/Install-FreeFirstWindows.ps1) with the approved public HTTPS `/v1` URL and the existing strict-host-key OpenSSH profile. The installer validates both scoped keys and creates a local backup of changed client configuration.
