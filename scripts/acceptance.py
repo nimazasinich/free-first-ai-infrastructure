@@ -4,6 +4,7 @@ import argparse
 from http.client import HTTPException
 import json
 from pathlib import Path
+import sqlite3
 import subprocess
 import time
 
@@ -61,7 +62,22 @@ def load_models(base, key, attempts=4):
     return 429, []
 
 
-def policy(public, upstream_key, canary, pilot_key=None):
+def stored_key_policy(root):
+    expected = {
+        "canary": [ALIAS],
+        "free-first-windows-cursor": [ALIAS],
+        "free-first-windows-codex": [ALIAS],
+        "free-first-pilot-lite": [PILOT_ALIAS],
+    }
+    with sqlite3.connect(f"file:{root / 'data/db/data.sqlite'}?mode=ro", uri=True) as db:
+        rows = db.execute("SELECT name, accessRestricted, accessAllow FROM apiKeys WHERE isActive = 1").fetchall()
+    actual = {name: json.loads(allow or "[]") for name, restricted, allow in rows if restricted == 1}
+    passed = len(rows) == len(expected) and actual == expected
+    log(check="stored_key_policy", active=len(rows), restricted=len(actual), matches=passed)
+    return passed
+
+
+def policy(public, upstream_key, canary, pilot_key=None, windows_keys=()):
     cursor_line = journal("-n", "1", "--show-cursor").splitlines()[-1]
     cursor = cursor_line.removeprefix("-- cursor: ")
     if not cursor or cursor == cursor_line:
@@ -95,6 +111,11 @@ def policy(public, upstream_key, canary, pilot_key=None):
                     expected=expected, status=actual,
                 )
                 passed &= actual == expected
+    for label, key in windows_keys:
+        for path in (CHAT, RESPONSES):
+            actual = status(GATEWAY, path, key, body_for(PILOT_ALIAS, path))
+            log(check="windows_key_deny", client=label, path=path, expected=403, status=actual)
+            passed &= actual == 403
     for key in (None, "invalid-canary-key"):
         actual = status(GATEWAY, "/v1/models", key)
         log(check="catalog_auth", layer="router", expected=401, status=actual)
@@ -164,6 +185,11 @@ def policy(public, upstream_key, canary, pilot_key=None):
         code, models = load_models(GATEWAY, pilot_key)
         valid = models == [PILOT_ALIAS]
         log(check="catalog", layer="router_pilot", status=code, count=len(models), expected_present=valid)
+        passed &= code == 200 and valid
+    for label, key in windows_keys:
+        code, models = load_models(GATEWAY, key)
+        valid = models == [ALIAS]
+        log(check="windows_key_catalog", client=label, status=code, count=len(models), expected_present=valid)
         passed &= code == 200 and valid
     return passed
 
@@ -259,7 +285,12 @@ def main():
     pilot_path = args.root / "client-keys" / "pilot-lite.key"
     pilot_key = pilot_path.read_text().strip() if pilot_path.is_file() else None
     if args.suite == "policy":
-        return policy(args.public_url, upstream_key, canary, pilot_key)
+        stored = stored_key_policy(args.root)
+        windows_keys = [
+            (label, (args.root / "client-keys" / f"{label}.key").read_text().strip())
+            for label in ("cursor", "codex")
+        ]
+        return policy(args.public_url, upstream_key, canary, pilot_key, windows_keys) and stored
     if args.suite == "pilot":
         if not pilot_key:
             log(check="pilot_key", present=False)
