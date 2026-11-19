@@ -12,8 +12,10 @@ import urllib.request
 from probe import MODEL, NoRedirect, local_state
 
 
-def configure(root):
-    upstream_key, canary_key = local_state(root)
+ACCESS = {"restricted": True, "allow": ["free/" + MODEL]}
+
+
+def dashboard(root):
     env = dict(line.split("=", 1) for line in (root / "env").read_text().splitlines() if "=" in line)
     opener = urllib.request.build_opener(
         urllib.request.ProxyHandler({}), urllib.request.HTTPCookieProcessor(CookieJar()), NoRedirect(),
@@ -34,12 +36,20 @@ def configure(root):
 
     if not admin("/api/auth/login", "POST", {"password": env["INITIAL_PASSWORD"]}).get("success"):
         raise RuntimeError("Local dashboard login failed")
+    return admin
+
+
+def configure(root):
+    upstream_key, canary_key = local_state(root)
+    admin = dashboard(root)
     keys = admin("/api/keys")["keys"]
-    if len(keys) != 1 or keys[0]["key"] != canary_key or not keys[0]["isActive"]:
-        raise RuntimeError("Gateway API key inventory differs from expected single active canary")
-    access = {"restricted": True, "allow": ["free/" + MODEL]}
-    key_id = keys[0]["id"]
-    if admin(f"/api/keys/{key_id}", "PUT", {"access": access})["key"]["access"] != access:
+    canaries = [key for key in keys if key["isActive"] and key["key"] == canary_key]
+    if len(canaries) != 1:
+        raise RuntimeError("Expected one active canary key")
+    if any(key["isActive"] and key["key"] != canary_key and key["access"] != ACCESS for key in keys):
+        raise RuntimeError("An active client key has unexpected model access")
+    key_id = canaries[0]["id"]
+    if admin(f"/api/keys/{key_id}", "PUT", {"access": ACCESS})["key"]["access"] != ACCESS:
         raise RuntimeError("9Router did not persist the requested key policy")
     print("9Router canary key restricted to one approved target")
 
