@@ -1,17 +1,16 @@
 # Free-First AI Infrastructure — Master Plan v10
 
-**Status:** Proposed new authoritative architecture and execution plan (documentation-only; not an implementation claim)  
-**Prepared:** 2026-11-19  
-**Repository:** https://github.com/nimazasinich/free-first-ai-infrastructure  
-**Supersedes:** \`MASTER_PLAN_V9_AUTONOMOUS_EXECUTION.md\` when accepted and merged  
-**Audience:** Owner, implementation agents, reviewers, operators
+- **Status:** Authoritative architecture and execution plan
+- **Prepared:** 2026-11-19
+- **Repository:** https://github.com/nimazasinich/free-first-ai-infrastructure
+- **Supersedes:** [Master Plan v9](MASTER_PLAN_V9_AUTONOMOUS_EXECUTION.md)
 
 > **Primary objective:** Operate a reusable, secure, quota-aware, multi-model API platform for authorized applications, using verified eligible capacity without unintended metered API charges. Cursor is one client, not the architecture's purpose. Availability must be maximized within real entitlement and provider limits; it cannot be guaranteed without unlimited capacity.
 
 ## 0. Decision hierarchy and evidence rules
 
 1. The owner's newest explicit decisions take precedence over older instructions in the repository. In particular, the clean official AIStudio2API v0.3.12 installation is now the baseline; do not restore removed historical source, databases, UI modifications, or support services.
-2. This plan defines intended architecture and acceptance gates. \`EXECUTION_TRACKER.md\` defines observed results. The runbook defines operational procedure. A plan statement never substitutes for a successful live test.
+2. This plan defines intended architecture and acceptance gates. `EXECUTION_TRACKER.md` defines observed results. The runbook defines operational procedure. A plan statement never substitutes for a successful live test.
 3. Official documentation for the **deployed version** outranks assumptions about a later release. Inspect the running 9Router image, AIStudio2API settings, and active clients before changes.
 4. Every critical statement is tagged or understood as **VERIFIED**, **HISTORICAL VERIFIED**, **OWNER-REPORTED**, **PLANNED**, **BLOCKED**, or **UNKNOWN**. Do not convert a visible catalog entry into account eligibility, execution capability, or billing proof.
 5. No deployment, account/session modification, key expansion, legacy retirement, purchase, or new usage-based provider is authorized by this *document rewrite*. Implementation requires its own gated execution.
@@ -47,18 +46,18 @@ The following is a **dated snapshot**, not an ongoing guarantee. Reconfirm statu
 
 | Item | Verified / reported baseline (2026-11-19) | Evidence status |
 | --- | --- | --- |
-| VPS | \`srv4503740909\`, AlmaLinux 9.8, public IP \`185.221.237.84\`, approximately 2 vCPU / 3.6 GiB RAM | Historical verified |
-| Workstation | \`DESKTOP-D5I8IQ2\`, Windows 10 Enterprise N build 19045 | Historical verified |
-| GitHub | \`main\` at \`a59dc299a691f6f92c2f254bf3abe29f4f61123a\`, Phase 4 PR #6 merged | Verified by repository read |
-| Native upstream | **Official AIStudio2API v0.3.12**, \`aistudio2api.service\`, executable under \`/opt/services/aistudio2api/releases/fresh-official-v0.3.12-20261119/\` | Historical verified after fresh install |
-| Native runtime | \`/var/lib/aistudio2api-fresh\`, with 10 migrated account records and regenerated model/runtime records | Historical verified; account ability to execute still must be checked |
-| Native health | \`http://127.0.0.1:2048/health\` returned 200 after restart | Historical verified |
-| Native public host | \`https://aistudio.185-221-237-84.sslip.io/\` returned 200 | Historical verified; this is a separate security surface |
-| Clean gateway | \`/opt/9router-clean\`, container \`9router-clean\`, 9Router v0.5.119 as previously pinned | Historical verified; reconfirm current digest |
-| Gateway ingress | \`https://r9.185-221-237-84.sslip.io/v1\` | Historical verified |
+| VPS | `srv4503740909`, AlmaLinux 9.8, public IP `185.221.237.84`, approximately 2 vCPU / 3.6 GiB RAM | Historical verified |
+| Workstation | `DESKTOP-D5I8IQ2`, Windows 10 Enterprise N build 19045 | Historical verified |
+| GitHub | `main` at `a59dc299a691f6f92c2f254bf3abe29f4f61123a`, Phase 4 PR #6 merged | Verified by repository read |
+| Native upstream | **Official AIStudio2API v0.3.12**, `aistudio2api.service`, executable under `/opt/services/aistudio2api/releases/fresh-official-v0.3.12-20261119/` | Historical verified after fresh install |
+| Native runtime | `/var/lib/aistudio2api-fresh`, with 10 migrated account records and regenerated model/runtime records | Historical verified; account ability to execute still must be checked |
+| Native health | `http://127.0.0.1:2048/health` returned 200 after restart | Historical verified |
+| Native public host | `https://aistudio.185-221-237-84.sslip.io/` returned 200 | Historical verified; this is a separate security surface |
+| Clean gateway | `/opt/9router-clean`, container `9router-clean`, 9Router v0.5.119 as previously pinned | Historical verified; reconfirm current digest |
+| Gateway ingress | `https://r9.185-221-237-84.sslip.io/v1` | Historical verified |
 | Gateway policy | One approved private AIStudio2API provider, four active restricted keys, **zero** combos | Reverified after AIStudio2API reinstall |
-| Approved production route | \`free/gemini-3.8-flash\` for Canary, Windows Cursor MCP, and Windows Codex | Reverified policy, not a post-reinstall live generation |
-| Approved pilot route | \`free/gemini-3.5-flash-lite\` for \`free-first-pilot-lite\` only | Reverified policy, not a post-reinstall live generation |
+| Approved production route | `free/gemini-3.8-flash` for Canary, Windows Cursor MCP, and Windows Codex | Reverified policy, not a post-reinstall live generation |
+| Approved pilot route | `free/gemini-3.5-flash-lite` for `free-first-pilot-lite` only | Reverified policy, not a post-reinstall live generation |
 | Native catalog | 92 identifiers before fresh reinstall; fresh count must be rechecked | Historical verified, now potentially stale |
 | Account counts | 10 records (historically 7 Free-scoped / 3 Pro-scoped) | Records verified; present entitlement / restriction needs fresh observation |
 | Account restrictions | Two accounts were previously restricted; owner reports recognition after clean install | Owner-reported; execution and verification status not yet established |
@@ -72,7 +71,7 @@ The following is a **dated snapshot**, not an ongoing guarantee. Reconfirm statu
 
 ## 3. Target architecture and trust boundaries
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
   subgraph clients["Authorized clients"]
     CUR[Cursor MCP]
@@ -99,7 +98,7 @@ flowchart TD
   TLS --> GUARD --> ROUTER --> PRIVATE --> BRIDGE --> STUDIO
   STUDIO --> ACC --> GOOGLE
   LEGACY[OmniRoute / candidate: separate legacy consumers] -. never silently merged .- ROUTER
-\`\`\`
+```
 
 **Security boundaries:**
 
@@ -115,44 +114,44 @@ flowchart TD
 | Concern | Primary owner | Do **not** duplicate elsewhere |
 | --- | --- | --- |
 | Google account login/session lifecycle | Official AIStudio2API | No gateway cookie import or session re-login automation |
-| Real \`ListModels\`, tiers, per-account model capability | AIStudio2API | No invented gateway entitlement engine |
+| Real `ListModels`, tiers, per-account model capability | AIStudio2API | No invented gateway entitlement engine |
 | WAA proof, worker acquisition, worker concurrency | AIStudio2API | No parallel custom account pool in Bridge |
 | Same-model account selection, retries, cooldown | AIStudio2API | No second account retry loop in 9Router |
-| Upstream model aliases | AIStudio2API \`MODEL_MAPPING\` for native clients; 9Router explicit catalog for public aliases | Avoid alias-on-alias ambiguity |
-| Per-model account preference | AIStudio2API \`MODEL_ACCOUNTS\` on **real model IDs** | Never use it as client key authorization |
-| Per-native-key account restriction | AIStudio2API \`API_KEY_ACCOUNTS\`, when needed | Not the 9Router model ACL |
+| Upstream model aliases | AIStudio2API `MODEL_MAPPING` for native clients; 9Router explicit catalog for public aliases | Avoid alias-on-alias ambiguity |
+| Per-model account preference | AIStudio2API `MODEL_ACCOUNTS` on **real model IDs** | Never use it as client key authorization |
+| Per-native-key account restriction | AIStudio2API `API_KEY_ACCOUNTS`, when needed | Not the 9Router model ACL |
 | Public client credentials and permitted model IDs | 9Router, Edge Guard, Bridge defense-in-depth | Do not infer from native catalog visibility |
 | Model-to-model candidate failover | 9Router only after exact capability and failure semantics are proven | Never hide a downgrade from an unconsenting caller |
 | Public TLS, host routing, edge guard | Caddy + existing Edge Guard | No extra internet-facing daemon by default |
 | Endpoint adaptation, limited SSE plumbing | Private bridge | No account scheduler or complete second proxy product |
 | Public usage/audit policy | Router + edge metadata | Never log account cookies / prompt bodies by default |
 | Root-cause tracing | Correlated edge/router/bridge/native events | No blind p95 inference from one request |
-| Billing-safety evidence | Route inventory + native effective channel + independent provider billing check | A router \`cost\` field is not a provider invoice |
+| Billing-safety evidence | Route inventory + native effective channel + independent provider billing check | A router `cost` field is not a provider invoice |
 | Client migration / retirement proof | Client-specific test suite and legacy dependency register | No bulk rewrite of 95 saved Codex profiles |
 
 ## 5. Official AIStudio2API configuration: required interpretation
 
 The authoritative baseline is [AIStudio2API v0.3.12 README](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/README_en.md) and [development reference](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/docs/development.md), plus the release-tagged code.
 
-### \`MODEL_MAPPING\` — pure alias translation
+### `MODEL_MAPPING` — pure alias translation
 
-Format: \`alias:actual-model-id\`, comma-separated; split at the final colon.
+Format: `alias:actual-model-id`, comma-separated; split at the final colon.
 
 The currently migrated configuration was inspected with **seven** mappings, including:
 
-- \`cursor-argon-vps\` → \`gemini-4-argon\`
-- \`cursor-coder-vps\` → \`gemini-4-hydrogen\`
-- \`cursor-flash3.5-vps\` and \`cursor-free-vps\` → \`gemini-3.5-flash-lite\`
-- \`cursor-flash3.8-vps\` and \`cursor-combo-vps\` → \`gemini-3.8-flash\`
-- \`cursor-coding-combo-vps\` → \`gemini-4-argon\`
+- `cursor-argon-vps` → `gemini-4-argon`
+- `cursor-coder-vps` → `gemini-4-hydrogen`
+- `cursor-flash3.5-vps` and `cursor-free-vps` → `gemini-3.5-flash-lite`
+- `cursor-flash3.8-vps` and `cursor-combo-vps` → `gemini-3.8-flash`
+- `cursor-coding-combo-vps` → `gemini-4-argon`
 
-**Consequence:** The two \`combo\` names here **do not** represent fallback chains. Do not rename or remove them until their real consumers are identified. New aliases must describe actual behavior. Public 9Router aliases must have their own scoped ACL and accepted upstream ID.
+**Consequence:** The two `combo` names here **do not** represent fallback chains. Do not rename or remove them until their real consumers are identified. New aliases must describe actual behavior. Public 9Router aliases must have their own scoped ACL and accepted upstream ID.
 
-### \`MODEL_ACCOUNTS\` — model-specific automatic account scope
+### `MODEL_ACCOUNTS` — model-specific automatic account scope
 
-Format: \`actual-model-id:account-id|account-id\`, comma-separated; restricts the automatic candidate set and intersects with applicable native-key account scope. The release-tagged code checks the effective real model ID in \`ScopedSelection\`.
+Format: `actual-model-id:account-id|account-id`, comma-separated; restricts the automatic candidate set and intersects with applicable native-key account scope. The release-tagged code checks the effective real model ID in `ScopedSelection`.
 
-- The inspected fresh configuration had **five** rules. Real \`gemini-4-argon\` referenced three existing account IDs; real \`gemini-3.5-flash-lite\` referenced seven. The additional rules using \`cursor-argon-vps\`, \`cursor-free-vps\`, or \`cursor-flash3.5-vps\` should be treated as potentially redundant/ineffective for ordinary mapped generation, pending UI/API verification.
+- The inspected fresh configuration had **five** rules. Real `gemini-4-argon` referenced three existing account IDs; real `gemini-3.5-flash-lite` referenced seven. The additional rules using `cursor-argon-vps`, `cursor-free-vps`, or `cursor-flash3.5-vps` should be treated as potentially redundant/ineffective for ordinary mapped generation, pending UI/API verification.
 - Unlisted models do **not** become forbidden; the upstream still considers all *eligible* accounts subject to its other restrictions.
 - Explicit account binding or resource/session affinity can change automatic selection semantics.
 - A scope entry is not proof of **live entitlement**, **billing status**, **model capability**, or successful account execution.
@@ -160,18 +159,18 @@ Format: \`actual-model-id:account-id|account-id\`, comma-separated; restricts th
 
 ### Other important settings
 
-- \`UPSTREAM_CHANNELS\`: official v0.3.12 **default is \`playground\`**. The new \`.env\` does not explicitly set it. That is not, by itself, a misconfiguration; validate effective channel via Settings and bounded runtime evidence. Do not enable legacy Build as an assumed backup.
-- \`ROUTING_STRATEGY\`: default \`round-robin\`, selecting among **accounts** for the same model. \`fill-first\` is a separate preference, not cross-model fallback.
-- \`MAX_ACCOUNT_SWITCHES\`: default 3 for non-quota failures. Quota-limit failures have separate handling; do not replicate all retries at the gateway.
-- \`FIRST_EVENT_HEDGE\`: default \`off\`. Enabling it can issue an extra provider request and consume quota; do not turn it on to mask slow requests without measured benefit and an authorized quota budget.
-- \`API_KEY_ACCOUNTS\`: a native key-to-account rule. It is **not** a model allowlist.
-- \`MODEL_CHANNELS\`: a per-real-model channel preference. Leave unset unless needed for a proven approved route.
-- \`WAA_BACKEND\`: current environment specifies \`spidermonkey\`; preserve official behavior and test actual runtime health.
-- \`REQUEST_TIMEOUT\`: official default 30 minutes for a request/continuation round; this does not justify arbitrary 30-minute intermediary waits.
-- \`FAKE_STREAM\`: defaults false; preserve actual incremental streaming.
+- `UPSTREAM_CHANNELS`: official v0.3.12 **default is `playground`**. The new `.env` does not explicitly set it. That is not, by itself, a misconfiguration; validate effective channel via Settings and bounded runtime evidence. Do not enable legacy Build as an assumed backup.
+- `ROUTING_STRATEGY`: default `round-robin`, selecting among **accounts** for the same model. `fill-first` is a separate preference, not cross-model fallback.
+- `MAX_ACCOUNT_SWITCHES`: default 3 for non-quota failures. Quota-limit failures have separate handling; do not replicate all retries at the gateway.
+- `FIRST_EVENT_HEDGE`: default `off`. Enabling it can issue an extra provider request and consume quota; do not turn it on to mask slow requests without measured benefit and an authorized quota budget.
+- `API_KEY_ACCOUNTS`: a native key-to-account rule. It is **not** a model allowlist.
+- `MODEL_CHANNELS`: a per-real-model channel preference. Leave unset unless needed for a proven approved route.
+- `WAA_BACKEND`: current environment specifies `spidermonkey`; preserve official behavior and test actual runtime health.
+- `REQUEST_TIMEOUT`: official default 30 minutes for a request/continuation round; this does not justify arbitrary 30-minute intermediary waits.
+- `FAKE_STREAM`: defaults false; preserve actual incremental streaming.
 - Account-level login/verification restrictions imposed by Google may persist through fresh installs. Do not bypass provider account verification with hidden browser/session workarounds.
 
-**Source-code semantics:** [\`internal/aistudio/channel.go\`](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/aistudio/channel.go) intersects key and model candidate scopes for automatic selection; [\`internal/app/runtime.go\`](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/app/runtime.go) resolves aliases before actual generation and schedules via the account pool.
+**Source-code semantics:** [`internal/aistudio/channel.go`](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/aistudio/channel.go) intersects key and model candidate scopes for automatic selection; [`internal/app/runtime.go`](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/app/runtime.go) resolves aliases before actual generation and schedules via the account pool.
 
 ## 6. Model governance: five independent states
 
@@ -183,22 +182,22 @@ For every model and account, distinguish:
 4. **GATEWAY_PILOT_ENABLED** — the model is available only to a dedicated scoped test key.
 5. **PRODUCTION_ENABLED** — explicitly authorized for named production keys after capability, reliability and billing gates.
 
-Other valid states: \`COOLDOWN\`, \`ACCOUNT_RESTRICTED\`, \`BILLING_UNVERIFIED\`, \`PROTOCOL_UNSUPPORTED\`, \`BLOCKED\`, \`NOT_RUN\`.
+Other valid states: `COOLDOWN`, `ACCOUNT_RESTRICTED`, `BILLING_UNVERIFIED`, `PROTOCOL_UNSUPPORTED`, `BLOCKED`, `NOT_RUN`.
 
 Each approved catalog record should include:
 
-\`upstream_id\`, \`public_alias\`, \`source_version\`, \`account_scope_count\`, \`channel\`, \`protocols\`, \`streaming\`, \`tools\`, \`json\`, \`modalities\`, \`reasoning_level\`, \`input_limit\`, \`output_limit\`, \`billing_evidence\`, \`latency_sample\`, \`last_verified_at\`, \`owner_key_scope\`, and \`rollout_stage\`.
+`upstream_id`, `public_alias`, `source_version`, `account_scope_count`, `channel`, `protocols`, `streaming`, `tools`, `json`, `modalities`, `reasoning_level`, `input_limit`, `output_limit`, `billing_evidence`, `latency_sample`, `last_verified_at`, `owner_key_scope`, and `rollout_stage`.
 
-Never publish actual account names, session cookies, fingerprints, passwords, native bearer tokens, or the contents of \`auth/\`.
+Never publish actual account names, session cookies, fingerprints, passwords, native bearer tokens, or the contents of `auth/`.
 
 ### Current model decisions
 
 | Model / route | Current role | Next gate |
 | --- | --- | --- |
-| \`free/gemini-3.8-flash\` → \`gemini-3.8-flash\` | Existing production route | Post-reinstall bounded Chat/Responses and tool regression |
-| \`free/gemini-3.5-flash-lite\` → \`gemini-3.5-flash-lite\` | Restricted pilot only | Post-reinstall entitlement, channel and pilot generation check |
-| \`gemini-3.1-flash-lite\`, \`gemini-3.6-flash\` | Candidates, not approved | Real scope, capability, billing and bounded execution |
-| \`gemini-4-argon\`, \`gemini-4-hydrogen\` | Native candidate/subscription routes, disabled in clean gateway | Subscription authorization and no-extra-metered-charge evidence; do not silently promote |
+| `free/gemini-3.8-flash` → `gemini-3.8-flash` | Existing production route | Post-reinstall bounded Chat/Responses and tool regression |
+| `free/gemini-3.5-flash-lite` → `gemini-3.5-flash-lite` | Restricted pilot only | Post-reinstall entitlement, channel and pilot generation check |
+| `gemini-3.1-flash-lite`, `gemini-3.6-flash` | Candidates, not approved | Real scope, capability, billing and bounded execution |
+| `gemini-4-argon`, `gemini-4-hydrogen` | Native candidate/subscription routes, disabled in clean gateway | Subscription authorization and no-extra-metered-charge evidence; do not silently promote |
 | Image, TTS, Live, transcription, search, tools, other variants | Protocol-specific roadmap | End-to-end compatible adapter and permission proof |
 
 Changing from one model to a lower-capability model is not ordinary service failover. It requires explicit caller opt-in and a contract that the fallback truly meets the request's needs.
@@ -214,10 +213,10 @@ An unbound request is classified by account eligibility, live method, available 
 The private bridge currently:
 
 - Authenticates the single native upstream credential.
-- Allows exactly \`gemini-3.8-flash\` and \`gemini-3.5-flash-lite\` on \`/v1/chat/completions\` and \`/v1/responses\`.
-- Proxies \`/v1/models\` with a filtered catalog.
-- Preserves real SSE and \`Retry-After\`.
-- Maps selected native HTTP \`502/503/504\` responses to **terminal 500** to avoid repeated stock-9Router upstream sends.
+- Allows exactly `gemini-3.8-flash` and `gemini-3.5-flash-lite` on `/v1/chat/completions` and `/v1/responses`.
+- Proxies `/v1/models` with a filtered catalog.
+- Preserves real SSE and `Retry-After`.
+- Maps selected native HTTP `502/503/504` responses to **terminal 500** to avoid repeated stock-9Router upstream sends.
 
 This is an intentional safety workaround, **not** proof that all retries are optimal. It also means a naïve 9Router Fallback combo expecting 502/503/504 may **not** activate as documented. Never add a model combo without an isolated end-to-end failure-injection test of the bridge's actual responses. Changing bridge semantics must not create retry storms or duplicate non-idempotent calls.
 
@@ -230,11 +229,11 @@ Permit only with all of the following:
 3. Capabilities are compatible for this exact request: text, reasoning requirements, tools, tool-result continuation, response format, context, output size, and modality.
 4. Fallback is allowed only **before** first content/tool event; no automatic replay after client-visible stream starts.
 5. Only documented, tested transient conditions trigger fallback; never 400/401/403, unknown model, invalid tool schema, or an expired explicit-account session.
-6. The route is bounded: at most a verified finite attempt policy, respects \`Retry-After\` and cooldown, and surfaces a clear terminal error on exhaustion.
+6. The route is bounded: at most a verified finite attempt policy, respects `Retry-After` and cooldown, and surfaces a clear terminal error on exhaustion.
 7. The selected actual model is observable without exposing private account identity.
 8. Real quota-burning error tests are replaced with synthetic fixtures. No deliberate 429 exhaustion.
 
-**Go/no-go:** \`9Router → Flash → Lite\` is **BLOCKED for broad production** because the secondary may downgrade capability. A fully isolated *text-only* opt-in experiment may be evaluated if policy, bridge behavior, and the deployed router version genuinely support it. Combo count stays zero until promotion gates pass.
+**Go/no-go:** `9Router → Flash → Lite` is **BLOCKED for broad production** because the secondary may downgrade capability. A fully isolated *text-only* opt-in experiment may be evaluated if policy, bridge behavior, and the deployed router version genuinely support it. Combo count stays zero until promotion gates pass.
 
 ### Tier D — optional advanced routing (not currently authorized)
 
@@ -250,7 +249,7 @@ The **current public contract is deliberately narrow**, not a complete universal
 
 | External feature | Current state | Target condition |
 | --- | --- | --- |
-| OpenAI \`GET /v1/models\` | Working for scoped models | Preserve filtered catalog per credential |
+| OpenAI `GET /v1/models` | Working for scoped models | Preserve filtered catalog per credential |
 | OpenAI Chat Completions | Working / previously tested | Reverify post-reinstall SSE, tools and cancellation |
 | OpenAI Responses | Working / previously tested | Reverify post-reinstall basic and structured continuation |
 | Anthropic Messages | Not supplied by existing bridge | Add only with tested request/response/tool/SSE mapping or an officially supported direct provider path |
@@ -259,7 +258,7 @@ The **current public contract is deliberately narrow**, not a complete universal
 | TTS, audio, Live WebSockets | Not in current bridge allowlist | Distinct validated transports; do not fake coverage by advertising catalog models |
 | Background/long-running operations | Not in current bridge allowlist | Design durable task ownership before exposure |
 
-For each protocol, test \`request validation → model authorization → payload adapter → provider execution → streaming framing → error semantics → client tool continuation\`. Preserve provider-specific features only when adapter mapping is demonstrably lossless enough for the intended client.
+For each protocol, test `request validation → model authorization → payload adapter → provider execution → streaming framing → error semantics → client tool continuation`. Preserve provider-specific features only when adapter mapping is demonstrably lossless enough for the intended client.
 
 Prefer expanding 9Router's supported native mechanisms rather than writing an unrestricted multiprotocol proxy. The private bridge should remain small and auditable.
 
@@ -277,10 +276,10 @@ Prefer expanding 9Router's supported native mechanisms rather than writing an un
 
 **Billing policy**
 
-- \`NO_METERED_PATH_CONFIGURED\` is checkable from actual upstream and egress inventory.
-- \`PROVIDER_INVOICE_CHECKED\` requires an authorized billing source; absent that, mark **UNKNOWN**.
+- `NO_METERED_PATH_CONFIGURED` is checkable from actual upstream and egress inventory.
+- `PROVIDER_INVOICE_CHECKED` requires an authorized billing source; absent that, mark **UNKNOWN**.
 - Subscription entitlement does not automatically prove third-party/API usage is included or that any model is unlimited.
-- Router \`cost\` fields are application accounting, not bank/provider charges.
+- Router `cost` fields are application accounting, not bank/provider charges.
 - A newly discovered model enters **BILLING_UNVERIFIED** until the relevant mode of use is documented and validated.
 - No purchase, card attachment, billing toggle, Developer API, or paid fallback is part of this plan.
 
@@ -296,7 +295,7 @@ One historical production Flash sample reported approximately **389 seconds to f
 
 Log correlated **redacted** request metadata, with UTC time and monotonic durations:
 
-\`client_received\` → \`edge_accepted\` → \`router_selected\` → \`bridge_forwarded\` → \`native_request_start\` → \`native_account_selected\` → \`upstream_headers\` → \`first_sse_event\` → \`first_semantic_content\` → \`completed_or_cancelled\`.
+`client_received` → `edge_accepted` → `router_selected` → `bridge_forwarded` → `native_request_start` → `native_account_selected` → `upstream_headers` → `first_sse_event` → `first_semantic_content` → `completed_or_cancelled`.
 
 Report exact protocol, streaming flag, actual model, attempt count, response code, cooldown status and selected phase timings—never email/session material.
 
@@ -314,7 +313,7 @@ Report exact protocol, streaming flag, actual model, attempt count, response cod
 
 - VPS has constrained CPU and memory. Measure current RSS, resident workers, memory/swap activity, open FDs, CPU and filesystem before any new daemon.
 - Preserve the current SpiderMonkey-based native WAA backend unless official UI and objective tests justify changing it.
-- Avoid oversizing \`WARM_WORKER_LIMIT\` and \`MAX_ACTIVE_WORKERS\` solely because 10 accounts exist. Set capacity according to measured concurrent useful workloads and actual RAM headroom, through supported UI.
+- Avoid oversizing `WARM_WORKER_LIMIT` and `MAX_ACTIVE_WORKERS` solely because 10 accounts exist. Set capacity according to measured concurrent useful workloads and actual RAM headroom, through supported UI.
 - Account restriction, cooldown, login and renewal are **status** and entitlement concerns, not reasons to re-import sessions automatically. Use the official login/verification flow when Google requires it.
 - Do not reintroduce deleted custom warmup, safety-monitor, account-index-injector or reference services to the new official install.
 - Maintain minimal probes for native health, public 401/403 policy, bridge health and client-shape smoke tests. If scheduling is needed, use a small approved external monitor that never injects hidden model calls.
@@ -342,10 +341,10 @@ These phases replace the older single-pass deployment checklist. They are **depe
 
 **Purpose:** Remove semantic confusion while retaining existing consumers.
 
-- Classify \`MODEL_MAPPING\` aliases as real one-to-one aliases; do not represent them as Combos.
-- Verify \`MODEL_ACCOUNTS\` entries against **real** model IDs and actual account eligibility; identify redundant alias-name scopes.
-- Verify effective \`UPSTREAM_CHANNELS=playground\` through official Settings/runtime evidence, not merely by inspecting \`.env\`.
-- Inspect \`ROUTING_STRATEGY\`, retry limits, WAA worker capacity and first-event hedge state.
+- Classify `MODEL_MAPPING` aliases as real one-to-one aliases; do not represent them as Combos.
+- Verify `MODEL_ACCOUNTS` entries against **real** model IDs and actual account eligibility; identify redundant alias-name scopes.
+- Verify effective `UPSTREAM_CHANNELS=playground` through official Settings/runtime evidence, not merely by inspecting `.env`.
+- Inspect `ROUTING_STRATEGY`, retry limits, WAA worker capacity and first-event hedge state.
 - Verify each existing key/account scope through supported UI and independent router/bridge enforcement.
 - Propose minimal changes only for proven defects. No renaming of aliases used by existing clients without compatibility plan.
 
@@ -420,7 +419,7 @@ These phases replace the older single-pass deployment checklist. They are **depe
 **Purpose:** Remove old OmniRoute/candidate/Redis resources without breaking real consumers.
 
 - Inventory all active Cursor MCP registrations, Codex saved profiles, Caddy routes, webhook, cron, old dashboard/API consumers and current usage.
-- Classify \`ACTIVE_REQUIRED\`, \`ACTIVE_REPLACEABLE\`, \`CONFIGURED_BUT_UNUSED\`, \`OBSOLETE_VERIFIED\`, and \`UNKNOWN\`.
+- Classify `ACTIVE_REQUIRED`, `ACTIVE_REPLACEABLE`, `CONFIGURED_BUT_UNUSED`, `OBSOLETE_VERIFIED`, and `UNKNOWN`.
 - Migrate only exact capability matches with a real application test. The 95 saved OmniRoute Codex profiles are **not** 95 confirmed live callers, and should not be mass-converted.
 - Keep legacy infrastructure running while any active consumer or management function lacks a verified replacement.
 - Remove exclusive resources only after replacement/obsolescence and a safe, authorized reversible stop are proven.
@@ -433,7 +432,7 @@ Each gate must attach a reproducible, nonsecret evidence record with:
 
 - Exact component versions/digests, current time in UTC, relevant service state and applicable test fixture.
 - Test class: **LIVE**, **SYNTHETIC**, **READ_ONLY**, or **HISTORICAL**.
-- Test result: \`PASS\`, \`FAIL\`, \`PARTIAL\`, \`BLOCKED\`, \`NOT_RUN\`, \`UNKNOWN\`.
+- Test result: `PASS`, `FAIL`, `PARTIAL`, `BLOCKED`, `NOT_RUN`, `UNKNOWN`.
 - Requested model, **actual** model, protocol, endpoint, restricted key name (not value), response status, first header/event/content timings if relevant.
 - Upstream-forward count for rejected requests, failure/retry attempt counts and whether streaming had already begun.
 - Account eligibility summarized without identifier leakage; actual invoice status never guessed.
@@ -457,15 +456,15 @@ If any required evidence is missing, keep candidate isolated or disable it. Neve
 
 **Canonical documents**
 
-- This plan: \`MASTER_PLAN.md\` (the architecture and gates; must be updated when owner decisions change).
-- \`OWNER_FINAL_DECISIONS.md\`: owner authorization and constraints; if contradictory, reconcile explicitly rather than silently changing policies.
-- \`EXECUTION_TRACKER.md\`: append-only, time-stamped observation log.
-- \`docs/runbook.md\`: only actionable, **current** deployment and recovery paths.
-- \`docs/model-eligibility-matrix.md\`: model/account/protocol/channel/billing evidence.
-- \`docs/client-migration.md\`: clients, access scope, constraints, results.
-- \`docs/legacy-retirement.md\`: dependency classification and blocking consumers.
-- Proposed \`docs/architecture-contract.md\`: endpoint ownership, request path, protocol support and auth/trust boundary matrix (only if the plan alone becomes unwieldy).
-- Proposed \`docs/latency-evidence.md\`: timestamped request correlation and incident outcome (only when measurements exist).
+- This plan: `MASTER_PLAN.md` (the architecture and gates; must be updated when owner decisions change).
+- `OWNER_FINAL_DECISIONS.md`: owner authorization and constraints; if contradictory, reconcile explicitly rather than silently changing policies.
+- `EXECUTION_TRACKER.md`: append-only, time-stamped observation log.
+- `docs/runbook.md`: only actionable, **current** deployment and recovery paths.
+- `docs/model-eligibility-matrix.md`: model/account/protocol/channel/billing evidence.
+- `docs/client-migration.md`: clients, access scope, constraints, results.
+- `docs/legacy-retirement.md`: dependency classification and blocking consumers.
+- Proposed `docs/architecture-contract.md`: endpoint ownership, request path, protocol support and auth/trust boundary matrix (only if the plan alone becomes unwieldy).
+- Proposed `docs/latency-evidence.md`: timestamped request correlation and incident outcome (only when measurements exist).
 
 **Change discipline**
 
@@ -482,8 +481,8 @@ If any required evidence is missing, keep candidate isolated or disable it. Neve
 1. Revalidate the live post-reinstall upstream + gateway and effective official Playground channel.
 2. Fix stale paths and backup instructions in documentation **without restoring old AIStudio2API installations**.
 3. Confirm four restricted keys, two approved public models, one upstream and zero Combo routes.
-4. Run only the minimum live Flash/Lite tests justified by verified billing route and current account entitlement.
-5. Then perform P1 model mapping/account scope audit and P3 latency work in that order.
+4. Complete the P1 effective configuration and model/account scope audit before generation.
+5. Run only the bounded P2 Flash/Lite tests justified by the verified route and entitlement, then proceed to P3 latency and reliability work.
 6. Consider P4/P5 expansion only after the preceding gates prove stable and do not silently downgrade capabilities.
 
 **Definition of success:** The project exposes an increasingly useful set of verified, contract-compatible models through one controlled client API, with honest quota exhaustion, stable streaming/tools, explicit restrictions, no unforeseen metered paths and no unresolved collateral changes. "Always available" is an optimization objective, **not a promise**.
@@ -492,10 +491,10 @@ If any required evidence is missing, keep candidate isolated or disable it. Neve
 
 | Key name | Allowed public model at baseline | Status |
 | --- | --- | --- |
-| \`canary\` | \`free/gemini-3.8-flash\` | Production |
-| \`free-first-windows-cursor\` | \`free/gemini-3.8-flash\` | Production / Cursor MCP |
-| \`free-first-windows-codex\` | \`free/gemini-3.8-flash\` | Production / Codex |
-| \`free-first-pilot-lite\` | \`free/gemini-3.5-flash-lite\` | Isolated pilot |
+| `canary` | `free/gemini-3.8-flash` | Production |
+| `free-first-windows-cursor` | `free/gemini-3.8-flash` | Production / Cursor MCP |
+| `free-first-windows-codex` | `free/gemini-3.8-flash` | Production / Codex |
+| `free-first-pilot-lite` | `free/gemini-3.5-flash-lite` | Isolated pilot |
 
 Any fifth key, expanded allowlist, or Combo requires a separate change and evidence. Do not publish key values.
 
@@ -506,9 +505,9 @@ Any fifth key, expanded allowlist, or Combo requires a separate change and evide
 | Visible model / eligible model | Catalog is not entitlement |
 | Eligible model / executable model | Entitlement is not a successful request |
 | Model alias / model Combo | One-to-one name mapping is not fallback |
-| Native \`MODEL_ACCOUNTS\` / public ACL | Account selection is not public authorization |
+| Native `MODEL_ACCOUNTS` / public ACL | Account selection is not public authorization |
 | Same-model account switch / cross-model failover | Different layers, different correctness obligations |
-| \`UPSTREAM_CHANNELS\` absent / unsafe channel | v0.3.12 default is Playground; verify actual effective channel |
+| `UPSTREAM_CHANNELS` absent / unsafe channel | v0.3.12 default is Playground; verify actual effective channel |
 | Router accounting cost / Google invoice | Different evidence sources |
 | Successful fixture / real execution | Fixture tests prove code path, not upstream availability |
 | Active saved profile / active service consumer | A saved config is not proof of traffic |
@@ -523,7 +522,7 @@ Any fifth key, expanded allowlist, or Combo requires a separate change and evide
 - [AIStudio2API mapped-model execution code](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/app/runtime.go)
 - [Official 9Router Combo reference](https://github.com/decolua/9router/blob/master/gitbook/content/en/features/combos.md) — examples in that document are illustrative, **not** evidence that a given model is free, available or unlimited.
 - [Existing project README](README.md), [execution tracker](EXECUTION_TRACKER.md), [runbook](docs/runbook.md), [model matrix](docs/model-eligibility-matrix.md), [client matrix](docs/client-migration.md), [legacy audit](docs/legacy-retirement.md), [owner decisions](OWNER_FINAL_DECISIONS.md)
-- [Phase 4 PR #6](https://github.com/nimazasinich/free-first-ai-infrastructure/pull/6) — merge commit \`a59dc299a691f6f92c2f254bf3abe29f4f61123a\`
+- [Phase 4 PR #6](https://github.com/nimazasinich/free-first-ai-infrastructure/pull/6) — merge commit `a59dc299a691f6f92c2f254bf3abe29f4f61123a`
 
 ---
-**Document status:** Proposed. It changes only the plan and associated documentation when merged; it neither reconfigures nor audits the live runtime by itself.
+Operational evidence and open gates are recorded in the [execution tracker](EXECUTION_TRACKER.md).

@@ -1,4 +1,4 @@
-> **HISTORICAL / SUPERSEDED BY [MASTER_PLAN v10](MASTER_PLAN.md) once the v10 proposal is merged.** This v9 document describes the initial gateway rollout. It is not the current source of deployment paths, account/runtime state or model/failover policy after the 2026-11-19 official AIStudio2API reinstall.
+> **HISTORICAL / SUPERSEDED BY [MASTER_PLAN v10](MASTER_PLAN.md).** This v9 document describes the initial gateway rollout. It is not the current source of deployment paths, account/runtime state or model/failover policy after the 2026-11-19 official AIStudio2API reinstall.
 
 # Free-First gateway master plan
 
