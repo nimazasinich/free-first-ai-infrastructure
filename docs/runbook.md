@@ -5,6 +5,7 @@
 - The public gateway's HTTPS virtual host serves `GET /v1/models`, `POST /v1/chat/completions` and `POST /v1/responses`. Caddy sets the authenticated Edge Guard policy `r9-api`, which forwards to host loopback port 20228. [Caddy route reference](../caddy/free-first.caddy)
 - The pinned Docker image listens on port 20128, published only on loopback. Keep the existing `9router-clean-net` and existing `/opt/9router-clean/data` bind mount. Mount one gateway container on that network. [Compose](../docker/compose.yaml)
 - The container can reach the private Caddy listener at `172.20.0.1:20230`. Caddy relays to the bridge at `127.0.0.1:20231` without delaying SSE. The bridge accepts the existing upstream credential and calls native AIStudio2API at `127.0.0.1:2048`.
+- The bridge sends upstream 502, 503 and 504 failures to 9Router as terminal 500s and identifies the original status in the error. This avoids stock 9Router's automatic generation retries. The router may present a 503 with `Retry-After` while the upstream seat is cooling down. The bridge's header/idle timeout is 115 seconds, below Caddy's 120-second private response-header limit and the router's 130-second connection-to-headers limit.
 - The live Caddy file is `/opt/edge/caddy/Caddyfile.public`. The Caddy fragment in this repository references equivalent gateway routes. Retain the deployed site's TLS and existing unrelated hosts when editing it.
 - Application environment and runtime keys live in root-controlled files under `/opt/9router-clean`. The bridge receives `upstream.key` through systemd's `LoadCredential`. Store snapshots of the clean SQLite database outside Git.
 
@@ -18,6 +19,8 @@
 6. Install the Compose file at `/opt/9router-clean/compose.yaml`. Validate with `docker compose -f /opt/9router-clean/compose.yaml config --quiet` so environment or credentials stay out of stdout. For the first adoption only, stop and rename the old **clean** container before starting Compose. Run `docker compose -f /opt/9router-clean/compose.yaml up -d --pull never` and wait for `http://127.0.0.1:20228/api/health` to return 200.
 7. Run `python3 -m unittest discover -s tests -v`. As root on the VPS, run `python3 scripts/acceptance.py --public-url "$GATEWAY_URL" policy` and the bounded `real` suite. The negative test checks outbound bridge journal events before any positive probes. Use the public HTTPS hostname with certificate verification enabled. Verify the clean container's nftables counters and its inability to reach an unrelated host port or internet IP.
 8. Restart only `9router-clean` and the private bridge during a controlled window. Wait for the clean container and bridge health checks. Recheck the policy and a live public SSE request. Verify the native service PID and its HTTPS health.
+
+Run [router-fault.cjs](../tests/router-fault.cjs) using `docker exec -i CONTAINER node - < tests/router-fault.cjs` in a disposable container of the pinned image. Start the fixture with `--network none --tmpfs /app/data --rm`, `FREE_FIRST_FIXTURE=1`, `REQUIRE_API_KEY=true`, and a dummy `INITIAL_PASSWORD`. The test creates fixture data through loopback and compares a raw 503 with the status the private bridge emits. Use no production mounts or credentials.
 
 ## Recovery
 

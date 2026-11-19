@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only live acceptance. Real generation is optional and bounded."""
 import argparse
+from http.client import HTTPException
 import json
 from pathlib import Path
 import subprocess
@@ -180,6 +181,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path("/opt/9router-clean"))
     parser.add_argument("--public-url", required=True)
+    parser.add_argument("--layer", choices=("direct", "public"))
     parser.add_argument("suite", choices=("policy", "real", "tools", "restart"))
     args = parser.parse_args()
     upstream_key, canary = local_state(args.root)
@@ -190,15 +192,26 @@ def main():
         ("direct", UPSTREAM, upstream_key, MODEL),
         ("public", args.public_url, canary, ALIAS),
     ):
+        if args.layer and label != args.layer:
+            continue
         if args.suite == "restart" and label == "direct":
             continue
         if args.suite in ("real", "restart"):
             for responses in (False, True):
-                result = stream(base, key, model, responses, max_tokens=1024)
-                log(check="live_stream", layer=label, protocol="responses" if responses else "chat", **result)
-                passed &= result["complete"] and result["content_events"] > 0
+                protocol = "responses" if responses else "chat"
+                try:
+                    result = stream(base, key, model, responses, max_tokens=1024)
+                    log(check="live_stream", layer=label, protocol=protocol, **result)
+                    passed &= result["complete"] and result["content_events"] > 0
+                except (OSError, HTTPException, ValueError) as error:
+                    log(check="live_stream", layer=label, protocol=protocol, failure=type(error).__name__)
+                    passed = False
         if args.suite in ("real", "tools"):
-            passed &= tools(base, key, model, label)
+            try:
+                passed &= tools(base, key, model, label)
+            except (OSError, HTTPException, ValueError) as error:
+                log(check="tool_round_trip", layer=label, failure=type(error).__name__)
+                passed = False
     return passed
 
 
