@@ -33,7 +33,16 @@ Baseline `b32c859`. Observations are from the installed Windows clients and the 
 
 ## Application onboarding
 
-Use the public `/v1` origin and the exact model alias granted to the application. Each newly approved app needs a dedicated restricted key with the intended scope verified before distribution. Store it in the application's credential store and confirm its model catalog, a 403 for a different approved model, and one bounded call through the app's actual protocol. Revoke the key from the local 9Router dashboard when the app is retired. The current approved public protocols are Chat Completions and Responses. See the [v10 checkpoint](master-plan-v10-execution.md) for the latest live and fixture results.
+1. Request an approved dedicated key with a single model alias. Store it in the application's credential store. Set its base URL to `https://r9.185-221-237-84.sslip.io/v1` and use Bearer authentication. Set the model to the exact alias assigned to the application. Existing IDE, canary and pilot keys serve their own consumers.
+2. Load the key from the credential store into the command's process environment as `FREE_FIRST_GATEWAY_KEY`. From this repository, run the stdlib-only connection check with the exact assigned model alias.
+
+   ```sh
+   python -m scripts.check_client --model free/gemini-3.8-flash
+   ```
+
+   Expect PASS for the exact one-model catalog, missing and invalid credentials, unsupported routes and wrong methods. The command uses GET only, verifies HTTPS, disables redirects, prints status fields rather than response bodies, and exits nonzero if any check fails. Remove the process environment variable after use. Use `--url` only for an independently approved HTTPS gateway.
+3. Use OpenAI Chat Completions at `/v1/chat/completions` with `messages`, or Responses at `/v1/responses` with `input`. Report a successful stream only after its protocol's terminal success signal. For Chat, check its finish reason and `[DONE]`. For Responses, require `response.completed` and handle explicit failed or incomplete states. Treat a disconnect before completion as a failed request. Preserve `Retry-After` when present and prevent automatic replay of generation after partial output.
+4. Confirm the app's protocol behavior on a fixture. Use a separate, authorized bounded live acceptance request when provider execution is required. Revoke retired keys through the authorized local 9Router dashboard. [Live policy and fixtures](master-plan-v10-execution.md)
 
 ## Windows installation and rollback
 

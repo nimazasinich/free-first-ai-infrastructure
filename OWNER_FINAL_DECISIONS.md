@@ -7,4 +7,6 @@ The owner authorizes end-to-end gateway operations on the designated Windows wor
 - Use the existing Caddy and Edge Guard. Preserve unrelated services, VPN and monitoring.
 - Keep routing default-deny. Prohibit paid fallback, Google Developer API, Vertex and any bypass of restrictions or quotas.
 - Migrate clients after critical tests pass. Retire legacy 9Router, OmniRoute and its exclusive Redis only after verifying consumer replacement, a safe reversible stop and an owner-authorized recovery method. No new AIStudio2API session backups are to be created without a new owner decision. Remove only proven exclusive obsolete resources; preserve shared services.
+- Flash latency is **DEFERRED — UNRESOLVED — MONITOR PASSIVELY**. Use anonymized evidence from ordinary authorized requests. Preserve account bindings and avoid additional Flash stress tests or scheduled generation. Track the observed HTTP 403 security-verification incident separately.
+- Defer the installed Codex Flash continuation regression until a reliable path is available. Proceed independently with the candidate, protocol, application onboarding and legacy work.
 - Keep credentials, logs containing sensitive data and recovery material outside the public repository.
