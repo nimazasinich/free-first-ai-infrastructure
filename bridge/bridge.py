@@ -219,7 +219,9 @@ class Bridge(BaseHTTPRequestHandler):
                 self._headers(reply.status, content_type, length=len(data), retry_after=retry_after)
                 self.wfile.write(data)
             except (OSError, HTTPException, ValueError, TypeError, KeyError) as error:
-                outcome = "upstream_timeout" if isinstance(error, TimeoutError) else "transport_failed"
+                outcome = "transport_failed"
+                if isinstance(error, (TimeoutError, socket.timeout)):
+                    outcome = "upstream_timeout"
                 if not started_reply and not cancelled.is_set():
                     with suppress(OSError):
                         self._error(500, "Upstream transport failed")

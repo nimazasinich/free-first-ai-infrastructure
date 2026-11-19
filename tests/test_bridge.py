@@ -49,7 +49,7 @@ class MockUpstream(BaseHTTPRequestHandler):
             try:
                 if not self.connection.recv(1):
                     self.server.disconnected.set()
-            except TimeoutError:
+            except socket.timeout:
                 pass
             return
         if "mock_status" in body:
