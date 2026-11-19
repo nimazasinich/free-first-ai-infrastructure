@@ -1,18 +1,48 @@
 # Legacy retirement assessment
 
-**BLOCKED** as of 2026-11-19 15:07 UTC. No container, route, cron job, or webhook was stopped.
+**BLOCKED** as of 2026-11-19 15:36 UTC. No container, route, cron job, webhook, or live MCP registration was stopped or deleted. Native Cursor model-provider work is deferred and is not a retirement gate.
 
-- The dedicated Codex profile and the exact supported saved Flash profile now use the clean gateway. Cursor has a persistent clean MCP registration and this Agent used it. The original Windows configurations still contain old combo and management integrations. Ninety-five Codex profiles still select the OmniRoute provider, and two argon profiles select AIStudio directly. `Cursor-9Router-PrivateTunnel` and `OmniRoute Gemini Geo Guard` remain disabled. [Client dependency matrix](client-migration.md)
-- The two OmniRoute `/v1/chat/completions` rows in the last seven days were at 2026-11-17 15:33 UTC. One returned HTTP 200 for `ovh-anon/gpt-oss-120b` with 256 completion tokens. The other returned HTTP 499 for `ovh-anon/Meta-Llama-3_3-70B-Instruct` after about 30 seconds. Both used combo `code-fast-verified`, the active OVH anonymous connection, and the key named `token` with id `a7a46ad5-a3ba-4434-816f-358982d0f9a3`. Several keys share the name `token`. The live Cursor MCP tool `omniroute_combo_chat` defaults to `combo/code-fast-verified` and `max_tokens` 256, and its launcher process was running during this inspection. That is the matching active client. The exact Nov 17 process was not recovered from a local transcript.
-- OmniRoute also recorded about 20 `/api/providers/test` calls per hour with no API-key name. Those are internal provider health checks, not the two generation rows. The five-minute `omni-resource-watch.py` job only reads memory counters and writes `/opt/omniroute/data/ops_resource_watch.json`. The nightly `omni-nightly-backup.py` job backs up `storage.sqlite` and keeps 14 snapshots.
-- Caddy still has legacy OmniRoute API and UI routes, an OmniRoute hook, and a legacy 9Router dashboard route on a separate listener. Edge Guard still references their upstreams. An empty socket sample does not establish the absence of consumers.
-- The legacy candidate has a dedicated data mount, private bridge and egress service. OmniRoute and its Redis share an exclusive-looking Compose network, with Redis attached to a named volume. Treat exclusivity as provisional until timers, hooks, mounts and other callers are reconciled.
-- The legacy candidate, OmniRoute and Redis were observed running. Both legacy networks contained only their named router components during inspection. Docker reported each image as attached only to its corresponding container, and the OmniRoute Compose Redis data volume as attached only to its Redis container. The candidate retains a separate bind mount and active egress service.
-- The VPS has active OmniRoute root-crontab entries for nightly backups and a five-minute resource watcher. The configured OmniRoute webhook was enabled and points to the live ops ingest route. The latest recorded webhook delivery and ingest event were on November 8 UTC.
-- The legacy candidate's `usageHistory` spans 2026-10-14 through 2026-11-11 and contains no newer rows. Its last day with status `ok` was 2026-11-11. Cursor still has the `9router-candidate-combos` MCP server running, and `9router-gemini-egress.service` is active, so the idle usage table does not make the candidate removable.
-- The enabled webhook `omni-ops-webhook.service` still receives `https://185.221.237.84/_omni_ops_hooks/ingest` for `request.failed`, `quota.exceeded`, and `test.ping`. The newest delivery and ingest event remain 2026-11-08 02:39:50 UTC, HTTP 204. The webhook is idle but still owned by the enabled OmniRoute webhook record.
-- Root disk stayed 38G used and 18G available. Stopping was not attempted, so no RAM or disk was reclaimed. OmniRoute used about 373 MiB, its Redis about 13 MiB, and the candidate about 20 MiB.
+## Dependency matrix
 
-No controlled stop or resource deletion has been performed. The live OmniRoute MCP, the live candidate MCP, the public OmniRoute routes, the webhook, and both cron jobs remain retirement gates.
+| Component | Consumer | Required capability | Last confirmed activity | Replacement | Risk | Classification | Action |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Cursor MCP `omniroute-germany` | Live Cursor processes launching `Launch-OmniRoute-Mcp.ps1` / `diagnostic-mcp-v3.mjs` | Multi-combo generation and OmniRoute management tools | Running now; Nov 17 generations match `code-fast-verified` defaults | Free-First MCP covers only Flash catalog/chat | High | ACTIVE_REQUIRED | Keep |
+| Cursor MCP `9router-candidate-combos` | Live Cursor processes launching `9router-cursor-mcp.mjs` | Legacy candidate combo tools | Processes running now; candidate usage last `ok` day 2026-11-11 | None in one-model gateway | High | ACTIVE_REQUIRED | Keep |
+| Cursor MCP `free-first-gateway` | Live Cursor Free-First launcher | Restricted Flash generation | Running now; Agent MCP PASS earlier today | N/A | Low | ACTIVE_REQUIRED | Keep |
+| Codex profiles `free-first-gateway`, `gemini-gemini-3-8-flash` | Windows Codex scoped clients | Exact `free/gemini-3.8-flash` | Migrated and regression-tested | Already on clean gateway | Low | ACTIVE_REQUIRED | Keep |
+| 95 OmniRoute Codex `*.config.toml` profiles | Saved Codex configs | 45 combo aliases, 46 provider-specific models, 4 named aliases | Mostly inactive saved configs; not 95 live callers | Only exact Flash was eligible; already migrated | Medium if mass-deleted | CONFIGURED_BUT_UNUSED | Keep; do not mass-convert |
+| Argon `argon-aistudio` / `argon-aistudio-ssh` | Direct AIStudio Codex profiles | `gemini-4-argon` | Profiles present | Outside OmniRoute retirement | Medium | ACTIVE_REQUIRED | Keep |
+| Windows task `Cursor-9Router-PrivateTunnel` | Historical tunnel maintainer | Private tunnel | Status Disabled | Free-First HTTPS path | Low | OBSOLETE_VERIFIED | Leave disabled |
+| Windows task `OmniRoute Gemini Geo Guard` | Historical geo guard | Geo routing helper | Status Disabled | None required for clean gateway | Low | OBSOLETE_VERIFIED | Leave disabled |
+| OmniRoute container + Redis | MCP, Caddy `omni.*`, webhook, cron | Multi-provider generation and ops | Container healthy; 321 provider-test rows today; last gen 2026-11-17 | Incomplete | High | ACTIVE_REQUIRED | Keep |
+| `omni-ops-webhook.service` | OmniRoute custom webhook record | Failure/quota ingest | Enabled; last delivery 2026-11-08 02:39:50 UTC HTTP 204 | None verified | Medium | ACTIVE_REQUIRED | Keep while OmniRoute runs |
+| Root cron nightly backup / 5-min resource watch | OmniRoute ops | Backup and RAM alerts | Registered and owned by OmniRoute | Keep while OmniRoute runs | Medium | ACTIVE_REQUIRED | Keep |
+| `9router-candidate` + `9router-gemini-egress.service` | Candidate MCP and egress | Legacy candidate API | Container running; egress active; usage idle since 2026-11-11 | Incomplete | High | ACTIVE_REQUIRED | Keep |
+| Caddy OmniRoute / candidate / webhook routes | Public and edge consumers | Host routing | Present in `/opt/edge/caddy/Caddyfile.public` | Incomplete | High | ACTIVE_REQUIRED | Keep |
+| Clean `9router-clean` stack | Free-First clients | Restricted Flash gateway | Healthy; policy PASS | N/A | Low | ACTIVE_REQUIRED | Keep |
+| AIStudio2API | Protected upstream | Native Playground API | PID `1994530` since 2026-11-18 17:35:38 UTC | Must not change | Critical | ACTIVE_REQUIRED | Do not modify |
 
-For retirement, first verify replacement client workflows and identify remaining service, route, webhook and scheduled-job owners. Create and verify a root-only recovery copy for each exclusive data store. Perform reversible container stops with current restart semantics documented, rerun gateway and unrelated health checks, and verify the restore sequence. Remove only identified exclusive resources after those checks.
+## Why retirement remains blocked
+
+- Live Cursor still loads OmniRoute and candidate MCP servers. Their required capabilities are multi-model or management surfaces that the one-model Free-First gateway does not replace.
+- The Nov 17 OmniRoute Chat rows still match the live `omniroute_combo_chat` defaults (`combo/code-fast-verified`, 256 completion tokens). Exact process attribution remains incomplete, so the service stays required.
+- Candidate usage is idle after 2026-11-11, but the candidate MCP process and egress unit are active. Idle tables alone are not ownership proof.
+- Webhook and both OmniRoute cron jobs remain owned by the still-running OmniRoute deployment.
+- No additional Flash-compatible Codex consumer was found to migrate. Remaining flash-named OmniRoute profiles use other model IDs and were not remapped.
+
+## Resource baseline if retirement becomes unblocked
+
+Observed at 2026-11-19 15:36 UTC, before any stop:
+
+- Root filesystem: 38G used, 18G available (69%).
+- OmniRoute about 402 MiB RAM, Redis about 13 MiB, candidate about 23 MiB, clean gateway about 108 MiB.
+- Disk: `/opt/omniroute` 2.0G, `/opt/9router-migration` 179M, `/opt/9router-clean` 2.3M, `/opt/aistudio2api` 3.1G.
+- Measured reclaim this phase: none.
+
+## Retirement procedure when gates clear
+
+1. Prove each remaining ACTIVE_REQUIRED consumer has a verified replacement or is unused.
+2. Save root-only copies of crontab, Caddy, Edge Guard, systemd units, Compose definitions, image IDs, restart policies, and SQLite/Redis backups.
+3. Pause confirmed jobs/webhook producers, then reverse-stop only the cleared service while retaining containers and data.
+4. Recheck Free-First clients, AIStudio2API, VPN, and monitoring.
+5. Remove only proven exclusive resources after a successful deliberate stop and restore rehearsal.
