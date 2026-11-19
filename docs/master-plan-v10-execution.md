@@ -52,6 +52,15 @@
 - **P8 BLOCKED.** Both legacy MCP registrations and their worker processes were present. The 99 saved Codex profiles still include 95 OmniRoute, two Free-First and two native AIStudio profiles. Both historical Windows tasks stayed Disabled. OmniRoute, Redis, the candidate, webhook and egress were active, with two legacy root jobs and Caddy route references. Running registrations establish dependencies to reconcile. A saved profile count does not measure live traffic.
 - **PASS deployment preservation.** Native AIStudio2API, Caddy, Edge Guard, the bridge and egress services stayed active. The bridge hash and four key scopes matched the previous checkpoint. The live checks created no generation records, new credentials or production route changes.
 
+## Official v0.3.12 GUI configuration audit, 2026-11-19
+
+- **PASS · PR #12.** Reviewed head `026b09d`, verified CI, and merged at `637287bad0b85a54beb51830f2faf26e18458408`. Locally rechecked 19 Python and two Node tests.
+- **PASS · GUI and persistence.** Signed-in administrator confirmed v0.3.12 Running. All six Settings groups matched after reload with no restart pending. No GUI edit met the measurable-benefit criterion. The native process, configuration, ten account records, listeners and gateway deployment matched preflight.
+- **PASS · live GET-only.** Canary, pilot and both installed Windows credentials passed exact model-scope discovery and the default-deny checks. Playground remained the only channel. No new generation or retry appeared in the native ledger.
+- **PARTIAL · model catalog.** Seven real-model detail dialogs corroborated scheduler scopes. Argon, Hydrogen and Neon show a continuation-aware GUI ceiling above native per-response metadata caps. Provider entitlements and billing remain **UNKNOWN**. [Updated eligibility matrix](model-eligibility-matrix.md#official-gui-and-native-model-metadata)
+- **BLOCKED · account verification.** Six Free and two Pro seats Ready. The remaining Free and Pro records require owner verification in Google AI Studio before an authorized status refresh.
+- **Flash latency · DEFERRED — UNRESOLVED — MONITOR PASSIVELY.** The current production Flash scope and disabled hedge were confirmed. Installed Codex continuation acceptance remains **FAIL**. Fresh generation, continuation and resume were **NOT_RUN**. [Full audit and onboarding criteria](aistudio2api-official-gui-configuration.md)
+
 ## Next checkpoint
 
 Use the connection check for the first approved non-IDE application with its own scoped key. Prioritize its existing Chat or Responses contract. If a client needs a new protocol, stage its narrow credential scope and route contract in isolation before scheduling authorized live acceptance. Keep Flash latency passive and legacy retirement gated on verified replacement.

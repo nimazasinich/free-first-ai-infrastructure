@@ -19,6 +19,12 @@ All five advertised Playground `generateContent`, `countTokens`, `batchGenerateC
 
 **BLOCKED.** None of these five candidates had a successful generation in the fresh native ledger. The most useful initial candidate for an approved bounded trial is 3.1 Flash-Lite, given its catalog tier and lower-complexity use case. Require explicit isolated entitlement/cost evidence, a credential scope and live acceptance before staging it. The existing Flash and Lite aliases retain their established scopes.
 
+## Official GUI and native model metadata
+
+The subsequent signed-in v0.3.12 GUI audit confirmed eight Ready seats and two Restricted records. Real Flash remained unbound with eight Ready seats, Lite had seven Free seats bound with six Ready, and Argon had three Pro seats bound with two Ready. Tier eligibility for the additional candidates matched the inventory above.
+
+**PARTIAL · output limits.** Argon showed 1,048,576 in the GUI versus 32,768 in native Gemini metadata. Hydrogen and Neon showed 1,048,576 in the GUI versus 65,536 in metadata. The official GUI's output calculation uses the input window for models marked for automatic output continuation. Use the metadata values for conservative per-response planning. Actual generation limits and billing remain **UNKNOWN**. Four inspected Flash-family models showed 65,536 in both surfaces. [Official GUI audit and seven-model matrix](aistudio2api-official-gui-configuration.md#real-model-catalog) · [Tagged GUI calculation](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/web/src/components/ModelsTable.vue)
+
 ## Historical Phase 4 snapshot
 
 The tables below predate the fresh official release. Account identifiers are omitted.

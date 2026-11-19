@@ -24,6 +24,13 @@ Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds m
 - **PASS.** The new generation-free client check passed with all four existing scoped credentials. Isolated fixtures verified compatible tool fallback and Gemini text translation. They also reproduced incompatible Combo selection and gaps in Gemini catalog scoping, SDK authentication and tool forwarding.
 - **BLOCKED.** Candidate promotion still requires verified entitlement and cost treatment. Live fallback needs a fail-closed compatibility policy, protocol expansion needs an authorized app and scoped route acceptance, and legacy retirement still needs verified replacements. [Independent continuation evidence](docs/master-plan-v10-execution.md)
 
+## Official AIStudio2API GUI audit, 2026-11-19
+
+- **PASS.** Reviewed and merged [PR #12](https://github.com/nimazasinich/free-first-ai-infrastructure/pull/12) at `637287bad0b85a54beb51830f2faf26e18458408`. The signed-in official v0.3.12 GUI showed a running service. All six Settings groups matched after reload. No setting met the change criteria.
+- **PASS.** Four scoped keys passed the GET-only connection checker. Gateway route policy, native listeners, account bindings and Playground-only generation matched baseline. The native ledger stayed at 17 records. Hedging remains off.
+- **BLOCKED.** Two of ten enabled accounts require owner Google verification. The catalog displays a continuation-aware output ceiling for Argon, Hydrogen and Neon. Their per-response metadata caps are lower and actual generation ceilings remain unverified.
+- **DEFERRED — UNRESOLVED — MONITOR PASSIVELY.** Flash latency and its separate 403 account-health incident remain open. The previous installed Codex continuation remains **FAIL**. No fresh generation, continuation or resume ran. [Official GUI audit and onboarding handoff](docs/aistudio2api-official-gui-configuration.md)
+
 ## Deployment and acceptance
 
 - **A — Access and inspection | PASS.** Strict Windows SSH reached the expected VPS. The GitHub CLI reported administrator access and the repository cloned successfully. The running official 9Router image matched the pinned digest, revision and version 0.5.119. [Upstream source revision](https://github.com/decolua/9router/commit/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c)
