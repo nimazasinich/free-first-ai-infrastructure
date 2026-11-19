@@ -1,0 +1,28 @@
+name: free-first-gateway
+services:
+  gateway:
+    image: decolua/9router@sha256:f98847db83f7ec9f1b36f78850a26c77c6502197163dff6eaa76d0ea199de3a0
+    container_name: 9router-clean
+    env_file:
+      - path: /opt/9router-clean/env
+        format: raw
+    environment:
+      DATA_DIR: /app/data
+      ENABLE_REQUEST_LOGS: "false"
+      REQUIRE_API_KEY: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      FETCH_CONNECT_TIMEOUT_MS: "130000"
+    ports:
+      - "127.0.0.1:20228:20128"
+    volumes:
+      - /opt/9router-clean/data:/app/data
+    networks:
+      - clean
+    dns:
+      - 127.0.0.1
+    restart: unless-stopped
+
+networks:
+  clean:
+    name: 9router-clean-net
+    external: true

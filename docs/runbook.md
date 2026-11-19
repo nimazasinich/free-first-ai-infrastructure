@@ -1,0 +1,28 @@
+# Deployment and rollback
+
+## Layout
+
+- The public gateway's HTTPS virtual host serves `GET /v1/models`, `POST /v1/chat/completions` and `POST /v1/responses`. Caddy sets the authenticated Edge Guard policy `r9-api`, which forwards to host loopback port 20228. [Caddy route reference](../caddy/free-first.caddy)
+- The pinned Docker image listens on port 20128, published only on loopback. Keep the existing `9router-clean-net` and existing `/opt/9router-clean/data` bind mount. Mount one gateway container on that network. [Compose](../docker/compose.yaml)
+- The container can reach the private Caddy listener at `172.20.0.1:20230`. Caddy relays to the bridge at `127.0.0.1:20231` without delaying SSE. The bridge accepts the existing upstream credential and calls native AIStudio2API at `127.0.0.1:2048`.
+- The live Caddy file is `/opt/edge/caddy/Caddyfile.public`. The Caddy fragment in this repository references equivalent gateway routes. Retain the deployed site's TLS and existing unrelated hosts when editing it.
+- Application environment and runtime keys live in root-controlled files under `/opt/9router-clean`. The bridge receives `upstream.key` through systemd's `LoadCredential`. Store snapshots of the clean SQLite database outside Git.
+
+## Install or update on the existing VPS
+
+1. Confirm the approved digest is present, the dedicated network has gateway `172.20.0.1` and only the clean container is attached. Confirm Caddy, Edge Guard and native AIStudio2API are healthy.
+2. Use the SQLite online backup API for the clean database, then run `PRAGMA quick_check` on the copy. Save the current bridge, service unit, Compose file and active Caddy file to a root-only local directory. On first Compose adoption retain the previous stopped clean container for reversible recovery.
+3. Render [egress.nft](../docker/egress.nft) with a first line of `define clean_bridge = "BRIDGE_DEVICE"`, where the device is the Docker bridge that owns `172.20.0.1`. Use `nft -c -f` to check the rendered file. Install it as `/opt/9router-clean/egress.nft`. Install and enable [9router-clean-egress.service](../docker/9router-clean-egress.service). Keep its ordering before Docker and Caddy. Install [the Caddy drop-in](../caddy/docker-order.conf) under `/etc/systemd/system/caddy.service.d/` so the private Caddy listener follows Docker's bridge setup.
+4. With the existing gateway available, run `python3 scripts/configure.py` as root on the VPS. The script verifies the clean provider, uses the local dashboard API to restrict the sole canary key, registers the approved model, and provisions the existing upstream bearer locally.
+5. Install [bridge.py](../bridge/bridge.py) at `/opt/9router-clean/bridge.py` and [the bridge unit](../bridge/9router-clean-bridge.service) under `/etc/systemd/system/`. Reload the systemd configuration, enable or restart the bridge, and wait for its loopback listener. Expect 401 from `/v1/models` without the upstream key.
+6. Install the Compose file at `/opt/9router-clean/compose.yaml`. Validate with `docker compose -f /opt/9router-clean/compose.yaml config --quiet` so environment or credentials stay out of stdout. For the first adoption only, stop and rename the old **clean** container before starting Compose. Run `docker compose -f /opt/9router-clean/compose.yaml up -d --pull never` and wait for `http://127.0.0.1:20228/api/health` to return 200.
+7. Run `python3 -m unittest discover -s tests -v`. As root on the VPS, run `python3 scripts/acceptance.py --public-url "$GATEWAY_URL" policy` and the bounded `real` suite. The negative test checks outbound bridge journal events before any positive probes. Use the public HTTPS hostname with certificate verification enabled. Verify the clean container's nftables counters and its inability to reach an unrelated host port or internet IP.
+8. Restart only `9router-clean` and the private bridge during a controlled window. Wait for the clean container and bridge health checks. Recheck the policy and a live public SSE request. Verify the native service PID and its HTTPS health.
+
+## Recovery
+
+- **Image/container failure:** Keep the egress guard in place. If the previously running clean container is saved, stop and remove the Compose instance and rename the saved clean container back to `9router-clean`. Start it and reuse only the same clean bind mount. Validate both the 401 and allowlisted route before restoring traffic.
+- **Bridge failure:** Preserve the egress guard and auth/model restrictions. Use the current bridge/config from a known-good revision. Revert a failing change only to a verified safe revision. If no safe revision is available, return a service error at the gateway or revert affected clients to their previously verified configuration. The historical bridge buffers SSE and is a diagnostic snapshot.
+- **Database recovery:** Shut down the clean container before replacing SQLite. Save the failed database and its WAL/SHM separately. Restore the clean, checked snapshot and original file ownership. After restarting, verify the sole key is restricted before admitting traffic. An initial snapshot from before key hardening is for recovery investigation and requires reapplying the policy.
+- **Edge routing failure:** Validate a candidate Caddy file with the service environment before any graceful reload. Restore the saved active file and reload if the gateway or unrelated routes regress. Keep the native AIStudio2API deployment intact.
+- **Client migration:** Keep a verified prior configuration and a fresh scoped gateway key for the chosen client. Restore that client's prior configuration if the real application workflow fails. Keep retirement gated on consumer verification.

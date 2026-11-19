@@ -1,0 +1,53 @@
+# Import once in the active deployment. Keep site TLS, headers and limits
+# in its existing host block. Edge Guard's r9-api target is 127.0.0.1:20228.
+(free_first_api) {
+	@model_catalog {
+		path /v1/models
+		method GET HEAD
+	}
+	@generation {
+		path /v1/chat/completions /v1/responses
+		method POST
+	}
+	@known path /v1/models /v1/chat/completions /v1/responses
+	handle @model_catalog {
+		import free_first_edge
+	}
+	handle @generation {
+		import free_first_edge
+	}
+	handle @known {
+		respond 405
+	}
+	handle {
+		respond 404
+	}
+}
+
+(free_first_edge) {
+	reverse_proxy 127.0.0.1:9081 {
+		header_up X-Edge-Secret {env.EDGE_GUARD_SECRET}
+		header_up X-Edge-Policy r9-api
+		header_up X-Edge-Client-IP {client_ip}
+	}
+}
+
+# Filtered at the host by docker/egress.nft. The bridge also checks the bearer.
+http://172.20.0.1:20230 {
+	bind 172.20.0.1
+	handle /v1/models {
+		reverse_proxy 127.0.0.1:20231
+	}
+	@generation path /v1/chat/completions /v1/responses
+	handle @generation {
+		reverse_proxy 127.0.0.1:20231 {
+			flush_interval -1
+			transport http {
+				response_header_timeout 120s
+			}
+		}
+	}
+	handle {
+		respond 404
+	}
+}

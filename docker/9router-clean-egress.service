@@ -1,0 +1,11 @@
+[Unit]
+Description=Network policy for the Free-First 9Router bridge
+Before=docker.service caddy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /opt/9router-clean/egress.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
