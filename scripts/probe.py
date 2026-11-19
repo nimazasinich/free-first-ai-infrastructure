@@ -33,7 +33,7 @@ def local_state(root):
         return provider["apiKey"], (root / "canary.key").read_text().strip()
 
 
-def request(base, path, key=None, body=None, method=None):
+def request(base, path, key=None, body=None, method=None, *, timeout=100):
     headers = {"Accept-Encoding": "identity"}
     if key is not None:
         headers["Authorization"] = f"Bearer {key}"
@@ -49,7 +49,7 @@ def request(base, path, key=None, body=None, method=None):
     )
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     try:
-        return opener.open(req, timeout=100)
+        return opener.open(req, timeout=timeout)
     except urllib.error.HTTPError as error:
         return error
 

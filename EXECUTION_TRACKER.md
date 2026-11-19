@@ -18,6 +18,12 @@ Verified on 2026-11-19. Times in the stream checks are wall-clock milliseconds m
 - **FAIL.** The prior Codex continuation switched accounts after an upstream 403 and stalled at the next Pro-scoped seat. The one rerun failed before its tool call. Fresh continuation and resume were **NOT_RUN** in the rerun.
 - **BLOCKED.** No scope change was authorized. The isolated comparison and its quota/capacity tradeoffs are recorded in the [investigation report](docs/flash-account-latency-investigation.md).
 
+## Independent continuation, 2026-11-19
+
+- **DEFERRED — UNRESOLVED — MONITOR PASSIVELY.** PR #11 records the Flash latency investigation. The account-health 403/security-verification incident is separately unresolved. The last installed Codex regression failed before its first tool call. Fresh continuation and resume are **NOT_RUN**.
+- **PASS.** The new generation-free client check passed with all four existing scoped credentials. Isolated fixtures verified compatible tool fallback and Gemini text translation. They also reproduced incompatible Combo selection and gaps in Gemini catalog scoping, SDK authentication and tool forwarding.
+- **BLOCKED.** Candidate promotion still requires verified entitlement and cost treatment. Live fallback needs a fail-closed compatibility policy, protocol expansion needs an authorized app and scoped route acceptance, and legacy retirement still needs verified replacements. [Independent continuation evidence](docs/master-plan-v10-execution.md)
+
 ## Deployment and acceptance
 
 - **A — Access and inspection | PASS.** Strict Windows SSH reached the expected VPS. The GitHub CLI reported administrator access and the repository cloned successfully. The running official 9Router image matched the pinned digest, revision and version 0.5.119. [Upstream source revision](https://github.com/decolua/9router/commit/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c)

@@ -24,7 +24,7 @@ The protected official `aistudio2api.service` runs v0.3.12 from `/opt/services/a
 
 The `policy` suite checks the stored scope of all four active keys and tests both Windows credentials against the local router. The bridge-journal count is valid during a quiet verification window without concurrent generation forwards. For generation, the probe records a successful Responses stream only after `response.completed`, and treats protocol error events and incomplete streams as failures.
 
-Run [router-fault.cjs](../tests/router-fault.cjs) using `docker exec -i CONTAINER node - < tests/router-fault.cjs` in a disposable container of the pinned image. Start the fixture with `--network none --tmpfs /app/data --rm`, `FREE_FIRST_FIXTURE=1`, `REQUIRE_API_KEY=true`, and a dummy `INITIAL_PASSWORD`. The test creates fixture data through loopback and checks retry amplification, Combo isolation, partial-stream failure and Anthropic tool continuation. Use no production mounts or credentials.
+Run [router-fault.cjs](../tests/router-fault.cjs) using `docker exec -i CONTAINER node - < tests/router-fault.cjs` in a disposable container of the pinned image. Start the fixture with `--network none --tmpfs /app/data --rm`, `FREE_FIRST_FIXTURE=1`, `REQUIRE_API_KEY=true`, and a dummy `INITIAL_PASSWORD`. The test creates fixture data through loopback and checks retry amplification, Combo isolation, tool calls and continuation, partial-stream failure, Anthropic Messages, and Gemini-native text translation and authorization. Its negative controls document semantic loss on an incompatible Combo and the limits of the pinned Gemini route. See the [V10 checkpoint](master-plan-v10-execution.md) for promotion gates. Use no production mounts or credentials.
 
 ## Recovery
 

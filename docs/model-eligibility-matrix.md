@@ -7,6 +7,18 @@
 - `gemini-3.1-flash-lite` and `gemini-3.6-flash` were catalog-visible without a specific scope. Argon had a three-account scope, and Hydrogen was alias-mapped without a specific scope. Their fresh execution and billing gates remain open for clean-gateway expansion.
 - Both approved models completed direct and public Chat and Responses streams and public Chat tool round trips. Flash had a long-tail Chat sample and an initial Responses timeout. See the [v10 execution checkpoint](master-plan-v10-execution.md) for timings, cancellation and scope evidence.
 
+## Independent candidate inventory, 2026-11-19
+
+The official dashboard reported eight Ready accounts, six Free and two Pro, out of ten records. All five additional candidates appeared in all ten account catalogs. The access modes and Ready counts below describe native scheduler eligibility, subject to successful provider execution.
+
+- `gemini-3.1-flash-lite` and `gemini-4-hydrogen` had no real-model scope or catalog tier restriction in this snapshot. The eight Ready seats were eligible on that basis.
+- `gemini-3.6-flash` and `gemini-4-neon` were marked paid with access modes `[1,3]`. Tagged native eligibility requires Pro or Ultra for that combination, leaving two Ready Pro seats.
+- `gemini-4-argon` had the same paid restriction and an explicit three-account scope. Two scoped Pro seats were Ready. [AIStudio2API account eligibility](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/aistudio/accounts.go) · [Tier mapping](https://github.com/Mag1cFall/AIStudio2API/blob/v0.3.12/internal/aistudio/benefit.go)
+
+All five advertised Playground `generateContent`, `countTokens`, `batchGenerateContent`, function declarations and 1,048,576 input tokens. Output caps were 65,536 except Argon at 32,768. Neon and Hydrogen advertised an extra-high thinking setting, whereas the two Flash candidates included minimal thinking. The native catalog describes capabilities. Per-candidate streaming, client protocol translation, tools on live traffic and provider billing remain **UNKNOWN**.
+
+**BLOCKED.** None of these five candidates had a successful generation in the fresh native ledger. The most useful initial candidate for an approved bounded trial is 3.1 Flash-Lite, given its catalog tier and lower-complexity use case. Require explicit isolated entitlement/cost evidence, a credential scope and live acceptance before staging it. The existing Flash and Lite aliases retain their established scopes.
+
 ## Historical Phase 4 snapshot
 
 The tables below predate the fresh official release. Account identifiers are omitted.
