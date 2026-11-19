@@ -2,7 +2,7 @@
 
 **BLOCKED** as of 2026-11-19.
 
-- Codex and Cursor configurations still declare the OmniRoute bridge and legacy 9Router combo MCP servers. The new model canary exposes one approved model and zero combos. Compatibility with those deployed client workflows requires separate verification.
+- Codex and Cursor configurations still declare the OmniRoute bridge and legacy 9Router combo MCP servers. The OmniRoute client uses combo chat and service-specific management APIs, including compression settings and cache statistics. The new model canary exposes one approved model and zero combos. An ephemeral direct Codex canary passed. The existing MCP workflows still require a compatible replacement.
 - Caddy still has legacy OmniRoute API and UI routes, an OmniRoute hook, and a legacy 9Router dashboard route on a separate listener. Edge Guard still references their upstreams. An empty socket sample does not establish the absence of consumers.
 - The legacy candidate has a dedicated data mount, private bridge and egress service. OmniRoute and its Redis share an exclusive-looking Compose network, with Redis attached to a named volume. Treat exclusivity as provisional until timers, hooks, mounts and other callers are reconciled.
 - The legacy candidate, OmniRoute and Redis were observed running. No legacy state was copied into the clean gateway.
