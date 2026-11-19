@@ -1,6 +1,15 @@
 # Model eligibility and failover matrix
 
-The tables below are the historical Phase 4 snapshot from before the fresh official release. See the [v10 checkpoint](master-plan-v10-execution.md) for current configuration and post-reinstall execution evidence. Account identifiers are omitted.
+## Fresh official v0.3.12 evidence, 2026-11-19
+
+- `gemini-3.8-flash` is approved for production under `free/gemini-3.8-flash`. The native dashboard offered it to ten Ready seats with no explicit model binding. Seven distinct accounts served successful bounded Playground requests in the fresh ledger snapshot.
+- `gemini-3.5-flash-lite` is approved only for `free-first-pilot-lite` under `free/gemini-3.5-flash-lite`. Seven Free seats were in the real-model scope. Six distinct accounts served successful Playground requests in the snapshot.
+- `gemini-3.1-flash-lite` and `gemini-3.6-flash` were catalog-visible without a specific scope. Argon had a three-account scope, and Hydrogen was alias-mapped without a specific scope. Their fresh execution and billing gates remain open for clean-gateway expansion.
+- Both approved models completed direct and public Chat and Responses streams and public Chat tool round trips. Flash had a long-tail Chat sample and an initial Responses timeout. See the [v10 execution checkpoint](master-plan-v10-execution.md) for timings, cancellation and scope evidence.
+
+## Historical Phase 4 snapshot
+
+The tables below predate the fresh official release. Account identifiers are omitted.
 
 ## Status vocabulary
 
