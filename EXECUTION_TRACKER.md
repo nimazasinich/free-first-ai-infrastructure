@@ -45,3 +45,13 @@ Windows workspace `C:\Users\AI\Downloads\free-first-ai-infrastructure` was fast-
 - **Billing | PARTIAL.** The clean gateway still has one private upstream and zero combos. Its usage table summed a router `cost` field of 1.334139 across 27 successful `gemini-3.8-flash` rows. That is router accounting, not a provider invoice. Google project billing and the Cursor overage ledger were **UNKNOWN**.
 - **AIStudio2API | PASS unchanged.** PID `1994530` and start time `Wed 2026-11-18 17:35:38 UTC` matched before and after the checks. Loopback `/health` returned `{"status":"ok"}`.
 - **Resources | PASS measured, nothing reclaimed.** Root remained 38G used and 18G available. OmniRoute was about 373 MiB, the clean gateway about 107 MiB after the policy run, and the candidate about 20 MiB.
+
+## Legacy cleanup follow-up on 2026-11-19
+
+Native Cursor model-provider work was deferred by the owner. A temporary Phase 2 `settings.json` switch to the clean gateway was restored from `native-chat-backup-20261119T152630Z` before this audit. Restored SHA-256 matched the baseline `A13FE569955F1684BDBE462DD7C0EC0BAB86FBC72E5667D4E0E5ABCE1325F671`. The Free-First MCP registration was unchanged.
+
+- **Compatible client migrations this phase | NOT_RUN / none eligible.** The only exact Flash consumers already use `free_first_gateway`. Remaining OmniRoute "flash" profile names target other model IDs (`gemini-2.5-flash`, `gemini-3.6-flash`, Cloudflare GLM flash, and similar). They were not remapped.
+- **Obsolete Windows integrations | PARTIAL.** `Cursor-9Router-PrivateTunnel` and `OmniRoute Gemini Geo Guard` remain Disabled. No additional obsolete registration was removed. Live MCP processes for `omniroute-germany`, `9router-candidate-combos`, and `free-first-gateway` were still running.
+- **Legacy service retirement | BLOCKED.** OmniRoute, Redis, the candidate, egress, webhook, cron, and public Caddy routes remain. No container was stopped. Measured reclaim: none. Current samples: OmniRoute about 402 MiB, Redis about 13 MiB, candidate about 23 MiB, clean gateway about 108 MiB. Root still 38G used / 18G free.
+- **Gateway regression | PASS.** `acceptance.py --public-url https://r9.185-221-237-84.sslip.io policy` exited 0 with zero rejected upstream forwards. `gateway_models` still returned only `free/gemini-3.8-flash`.
+- **AIStudio2API | PASS unchanged.** PID `1994530`, start `Wed 2026-11-18 17:35:38 UTC`, health `{"status":"ok"}`.

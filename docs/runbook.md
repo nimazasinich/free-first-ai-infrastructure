@@ -41,3 +41,7 @@ See the [Windows client installation and rollback section](client-migration.md#w
 5. Remove only confirmed exclusive resources once the deliberate stop succeeds. Recheck the retained production routes, Docker network attachments, scheduled work, and service health after removal.
 
 For a nondisruptive recovery rehearsal, start a disposable container of the same digest with `--network none --tmpfs /app/data --rm`. Override its entrypoint with a shell that waits for a readiness file and then runs `/entrypoint.sh node custom-server.js`. Use `docker exec -i` to write the verified SQLite backup to `/app/data/db/data.sqlite` and create that readiness file. Enable `REQUIRE_API_KEY` and run [router-recovery.cjs](../tests/router-recovery.cjs) inside the container via stdin. The probe uses the restored key in memory and prints only status. Stop the disposable container to discard the tmpfs.
+
+## Windows native settings rollback
+
+If Cursor `settings.json` is temporarily pointed at the clean gateway for an authorized native test, restore it from a timestamped root-user backup under `%LOCALAPPDATA%\FreeFirstGateway\native-chat-backup-*` before any other cleanup. Verify SHA-256 against the backup baseline and confirm the Free-First MCP registration in `%USERPROFILE%\.cursor\mcp.json` is unchanged. Do not leave the global OpenAI endpoint on the Free-First host unless the owner authorizes a permanent switch. Native model-provider testing is currently deferred.
