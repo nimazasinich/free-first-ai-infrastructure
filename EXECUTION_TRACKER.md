@@ -2,6 +2,13 @@
 
 Current work follows [Master Plan v10](MASTER_PLAN.md). See the [post-reinstall execution checkpoint](docs/master-plan-v10-execution.md) for P0–P8. The earlier entries below document the pre-reinstall native PIDs, tests and resources.
 
+## V10 reconciliation, 2026-11-20 UTC
+
+- **PASS · Read-only production preflight, 23:13:34 UTC.** The established strict-host-key Windows SSH profile reached the expected AlmaLinux 9.8 server. Clean 9Router 0.5.119 and official AIStudio2API v0.3.13 were running. The native binary matched the official release asset. Health checks passed for native, clean router, protocol adapter and private router. The public anonymous catalog returned 401. The production and private routers had zero Combos.
+- **Checker recovery.** The checkout previously stopped when a quiet service journal had no cursor. The current checker reads both service journals from a common start time. The 22:48–23:08 UTC checkpoint completed 102 checks. The active-key registry failed and both services reported zero rejected upstream forwards. The 23:13 UTC inventory still reproduces the registry failure. Credential-specific evidence stays in the operator's private reconciliation record.
+- **Client evidence.** Cursor MCP returned exactly `free/gemini-3.8-flash` from the installed launcher at 22:55:15 UTC. At 23:15 UTC the registration remained present and Cursor's saved native provider matched the previous snapshot. The native credential recovery and BYOK gates remain blocked. No generation, credential changes, settings changes, or production restart ran in this continuation.
+- **Next permitted work.** Reconcile key ownership and consumers, then obtain approval for the exact restriction or deactivation and confirm rollback. Preserve independent billing, model eligibility, application onboarding and legacy gates. See the [remaining gaps](docs/V10_REMAINING_GAPS.md).
+
 ## V10 rollout, 2026-11-19
 
 - **PASS.** Reconciled the fresh runtime, merged the authoritative plan, deployed the private bridge cancellation fix, and verified four restricted client keys with zero rejected forwards.

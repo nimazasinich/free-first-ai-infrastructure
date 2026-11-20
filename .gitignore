@@ -51,3 +51,6 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# Operator-only runtime and reconciliation evidence.
+evidence/
