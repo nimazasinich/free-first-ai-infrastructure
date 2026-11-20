@@ -1,5 +1,18 @@
 # Model eligibility and failover matrix
 
+## Live catalog and scope recheck, 2026-11-20 UTC
+
+At approximately 22:55–22:59 UTC the official AIStudio2API v0.3.13 console displayed 50 model records and 10 accounts, including seven Free and three Pro. Its authenticated OpenAI-compatible catalog listed 105 IDs, including aliases. The production bridge exposed three native model IDs. The settings showed Playground enabled, Build and hedging off, no model channel override rows, and fake streaming off. The scopes below are the configured account candidate sets. Per-seat entitlement, readiness and billing can change.
+
+- **Flash 3.8** (`free/gemini-3.8-flash`) is the approved production Chat Completions and Responses route. The native dialog showed automatic selection from all eligible accounts. Canary, Cursor MCP and Codex showed the exact Flash catalog over HTTPS. Historical live evidence covers completion, streaming and structured tools, including Cursor Agent MCP continuation. Fresh native Cursor and installed Codex Responses continuation lack an accepted result.
+- **Flash-Lite 3.5** (`free/gemini-3.5-flash-lite`) remains a scoped Chat/Responses pilot. The native model dialog showed ten selected accounts. Earlier public pilot streams completed in both protocols. The November 20 private P5 Chat smoke used its dedicated single-seat credential and completed on Playground. That result covers one seat.
+- **Flash-Lite 3.1** (`free/gemini-3.1-flash-lite`) remains a separate scoped Chat/Responses pilot. The native dialog showed seven selected accounts. Historical public pilot streams completed in both protocols. Its exact public catalog passed in this run.
+- **Lite fallback** (`free/gemini-lite-safe-fallback`) is a virtual pilot alias. The scoped key lists it, and the live public Chat and Responses gates return 422. Deployed-stage fixtures verified bounded pre-stream switching and model reporting, cancellation without replay, and rejection of required tools and tool-result continuation on the text-only chain. Both live routers had zero Combo rows.
+- **Argon** (`gemini-4-argon`) was visible in the native catalog with three selected accounts. **Hydrogen** (`gemini-4-hydrogen`) was visible with automatic selection from all eligible accounts. Both stay outside the approved gateway generation scope. Their native catalog entries and prior execution evidence do not establish gateway protocol, account or billing acceptance.
+- **Native aliases and protocols.** The GUI confirmed `cursor-combo-vps` maps to `gemini-3.8-flash` and `cursor-coding-combo-vps` maps to `gemini-4-argon`. Public Gemini discovery with the authorized canary returned only Flash and advertised no generation methods. Public Anthropic/Gemini inference and token counting remained closed. Private pilot smoke and isolated SDK tool forwarding remain the evidence for those paths. Image, audio and Live wait for approved demand and contract acceptance.
+
+Google billing coverage across the scheduler's eligible accounts remains **UNKNOWN**. The current Google Projects view covered only its signed-in context. The prior single-seat no-billing evidence and the current Playground configuration establish narrower facts. Cursor's account-specific native BYOK treatment remains **UNKNOWN**. See the [execution tracker](../EXECUTION_TRACKER.md).
+
 ## Fresh official v0.3.12 evidence, 2026-11-19
 
 - `gemini-3.8-flash` is approved for production under `free/gemini-3.8-flash`. The native dashboard offered it to ten Ready seats with no explicit model binding. Seven distinct accounts served successful bounded Playground requests in the fresh ledger snapshot.

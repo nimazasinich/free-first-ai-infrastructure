@@ -1,8 +1,24 @@
 # Deployment and rollback
 
+## Connect and verify before changes
+
+From the designated Windows workstation, set `$sshConfig` to the existing operator-managed OpenSSH profile. Confirm the named host maps to the authorized VPS. Keep host-key verification enabled.
+
+```powershell
+ssh -V
+ssh -F $sshConfig -G vps185-root |
+    Select-String '^(hostname|user|port|stricthostkeychecking) '
+ssh -T -F $sshConfig -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=12 vps185-root `
+    'hostname; id -un; uname -s; cat /etc/os-release; date -u +%FT%TZ'
+```
+
+Require the hostname and account from the authorized inventory and AlmaLinux 9.8. Resolve any mismatch through the existing operator records before continuing. Obtain the running executable using the service MainPID, compare its SHA-256 against the executable in the digest-verified official release, and check native loopback health. Use read-only metadata for Docker image and router inventory.
+
+Use the current V10 `scripts/acceptance.py ... policy` checker with the approved six-scope registry. It verifies both protected service journals over a common window and fails on unexpected active access. Earlier installation checkpoints used a smaller inventory and their corresponding checker revisions. Keep the server-side script version distinct from any reviewed repository revision.
+
 ## Layout
 
-The protected official `aistudio2api.service` runs v0.3.12 from `/opt/services/aistudio2api/releases/fresh-official-v0.3.12-20261119/aistudio2api`. Its runtime is `/var/lib/aistudio2api-fresh` with account storage under `auth/`. Verify the active path with `systemctl show aistudio2api -p MainPID -p WorkingDirectory` and `readlink /proc/PID/exe`, then check loopback `/health`. The official Settings and Accounts pages provide configuration and readiness evidence. Preserve the fresh runtime and sessions, and use verified clean-gateway revisions for router or bridge recovery. See the [current checkpoint](master-plan-v10-execution.md).
+As of 2026-11-20 UTC the protected official `aistudio2api.service` runs v0.3.13 from `/opt/services/aistudio2api/releases/fresh-official-v0.3.12-20261119/aistudio2api`. The directory name dates from the fresh install. Its runtime is `/var/lib/aistudio2api-fresh` with account storage under `auth/`. Verify the active path with `systemctl show aistudio2api -p MainPID -p WorkingDirectory` and `readlink /proc/PID/exe`, then check loopback `/health` and the version in the official GUI. The Settings and Accounts pages provide configuration and readiness evidence. Preserve the runtime and sessions, and use verified clean-gateway revisions for router or bridge recovery. See the [current tracker](../EXECUTION_TRACKER.md).
 
 - The public gateway's HTTPS virtual host serves `GET /v1/models`, `POST /v1/chat/completions` and `POST /v1/responses`. Caddy sets the authenticated Edge Guard policy `r9-api`, which forwards to host loopback port 20228. [Caddy route reference](../caddy/free-first.caddy)
 - The pinned Docker image listens on port 20128, published only on loopback. Keep the existing `9router-clean-net` and existing `/opt/9router-clean/data` bind mount. Mount one gateway container on that network. [Compose](../docker/compose.yaml)
@@ -47,6 +63,14 @@ See the [Windows client installation and rollback section](client-migration.md#w
 
 For a nondisruptive recovery rehearsal, start a disposable container of the same digest with `--network none --tmpfs /app/data --rm`. Override its entrypoint with a shell that waits for a readiness file and then runs `/entrypoint.sh node custom-server.js`. Use `docker exec -i` to write the verified SQLite backup to `/app/data/db/data.sqlite` and create that readiness file. Enable `REQUIRE_API_KEY` and run [router-recovery.cjs](../tests/router-recovery.cjs) inside the container via stdin. The probe uses the restored key in memory and prints only status. Stop the disposable container to discard the tmpfs.
 
+## Unexpected active-key recovery
+
+After the owner confirms the key's consumer inventory, authorize the exact model restriction or deactivation. Capture the prior dashboard policy and rollback decision in the private operator record. Keep the credential value in its approved store. If a consumer needs migration, verify its exact contract using a dedicated scoped key before changing the old key.
+
+Use the supported 9Router controls and verify the persisted state. Repeat the approved registry and HTTPS catalog checks and the denied-forward policy window. On a confirmed regression, apply the explicitly agreed prior access policy through the dashboard and recheck affected clients. Resolve any temporary rollback exception before marking the production registry compliant. Keep database snapshot restoration for the separate database recovery procedure.
+
 ## Windows native settings rollback
 
-If Cursor `settings.json` is temporarily pointed at the clean gateway for an authorized native test, restore it from a timestamped root-user backup under `%LOCALAPPDATA%\FreeFirstGateway\native-chat-backup-*` before any other cleanup. Verify SHA-256 against the backup baseline and confirm the Free-First MCP registration in `%USERPROFILE%\.cursor\mcp.json` is unchanged. Do not leave the global OpenAI endpoint on the Free-First host unless the owner authorizes a permanent switch. Native model-provider testing is currently deferred.
+Before a temporary native Cursor cutover, verify the exact live endpoint and selected model in Cursor Settings. Confirm that the recovery credential is usable by the same Windows user and matches the prior provider. Keep the settings snapshot and protected credential in the existing private recovery directory. Proceed with a native Agent test once the compatibility, billing and recovery gates pass.
+
+If the cutover fails, restore the original provider URL, credential and model selection through Cursor's supported GUI, reload the app and verify the effective settings and persistent Free-First MCP registration. Record settings recovery and any separately authorized generation through the restored provider independently. The recovered baseline for the current checkpoint is `https://aistudio.185-221-237-84.sslip.io/v1` with the native `cursor-combo-vps` alias. See the [current tracker](../EXECUTION_TRACKER.md) for open gates.

@@ -2,6 +2,12 @@
 
 Baseline `b32c859`. Observations are from the installed Windows clients and the live VPS on 2026-11-19.
 
+## Current client state, 2026-11-20 UTC
+
+- **Cursor MCP — PASS.** The installed Windows registration initialized and authenticated at 22:55:15 UTC. Its only catalog entry was `free/gemini-3.8-flash`. A previous installed Agent session completed an MCP generation and continuation. The 23:15 UTC inspection reconfirmed the installed registration.
+- **Codex gateway — scoped connection PASS.** The dedicated Windows credential passed generation-free checks in the same checkpoint. The installed Flash continuation regression remains deferred. Historical resume and fixtures retain their original verification scope.
+- **Native Cursor — BLOCKED.** Cursor 3.31.11 still had its prior native provider settings at 23:15 UTC. The recovery credential mismatch and account-specific BYOK billing gate remain open. The optional native canary requires compatible GUI settings, a verified rollback credential and applicable account cost evidence. [Cursor BYOK](https://prod.cursor.com/help/models-and-usage/api-keys) · [Cursor pricing](https://cursor.com/docs/models-and-pricing)
+
 ## Dependency matrix
 
 | Dependency | Classification | Migration and evidence |
@@ -33,16 +39,32 @@ Baseline `b32c859`. Observations are from the installed Windows clients and the 
 
 ## Application onboarding
 
-1. Request an approved dedicated key with a single model alias. Store it in the application's credential store. Set its base URL to `https://r9.185-221-237-84.sslip.io/v1` and use Bearer authentication. Set the model to the exact alias assigned to the application. Existing IDE, canary and pilot keys serve their own consumers.
-2. Load the key from the credential store into the command's process environment as `FREE_FIRST_GATEWAY_KEY`. From this repository, run the stdlib-only connection check with the exact assigned model alias.
+### Intake and approval
+
+Record the actual application, its owner and run environment, the exact endpoint and model it needs, and who authorizes the connection. Record whether it needs incremental streaming or structured tool calls and tool-result continuation. Capture its expected concurrency, queueing, connection and overall request deadlines, cancellation and retry behavior, secret storage, log fields, data classes and retention. Compare those requirements with the accepted workflow. The application must be able to report failures and preserve the requested model identity.
+
+Use `https://r9.185-221-237-84.sslip.io/v1` with `Authorization: Bearer …`. Select exactly one alias. Flash `free/gemini-3.8-flash` is the established production model. `free/gemini-3.5-flash-lite` is the isolated Lite pilot and a new consumer needs its own approval and credential for that model. Choose Chat Completions (`POST /v1/chat/completions`, `messages`) or the previously accepted Responses contract (`POST /v1/responses`, `input`). Both routes are available to a key for its allowed model. If the client's authorization depends on a key being locked to just one of those paths, the installed model-only key policy cannot satisfy that requirement. Public Anthropic, Gemini, image, audio and other routes remain outside this contract.
+
+Obtain explicit owner approval for the named consumer, the exact model and a dedicated key before minting it. Verify the intended Playground entitlement and cost treatment before authorizing any generation. The six approved keys are reserved for their named roles. An independent client uses its own approved key. [Model eligibility and billing evidence](model-eligibility-matrix.md)
+
+### Credential staging and policy preflight
+
+1. Reconcile any unexpected active key and pass `scripts/acceptance.py ... policy` against the six approved baseline scopes before creating an application key. Capture the original client settings and a rollback point for that application. Use the existing protected local 9Router Dashboard and key controls.
+2. Use a unique key label tied to the approved app. The pinned version creates a key active and unrestricted, so keep the returned value within the operator session during creation. Immediately stage it inactive and restricted to exactly the one approved alias using the supported key update controls. Verify the persisted active flag and restriction. Deactivate the key immediately if the scope cannot be verified. [Pinned key creation](https://github.com/decolua/9router/blob/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c/src/lib/db/repos/apiKeysRepo.js) · [Pinned key update](https://github.com/decolua/9router/tree/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c/src/app/api/keys)
+3. Activate the scoped key in the approved acceptance window. Deliver it to the app's credential store through its approved secret handoff. Use the exact public origin and approved alias. Keep API keys, authorization headers and raw prompts or tool payloads out of logs and Git. Load the key into the checker process as `FREE_FIRST_GATEWAY_KEY` from that store, then run the existing GET-only checker with the approved alias. Remove the process environment entry when finished.
 
    ```sh
    python -m scripts.check_client --model free/gemini-3.8-flash
    ```
 
-   Expect PASS for the exact one-model catalog, missing and invalid credentials, unsupported routes and wrong methods. The command uses GET only, verifies HTTPS, disables redirects, prints status fields rather than response bodies, and exits nonzero if any check fails. Remove the process environment variable after use. Use `--url` only for an independently approved HTTPS gateway.
-3. Use OpenAI Chat Completions at `/v1/chat/completions` with `messages`, or Responses at `/v1/responses` with `input`. Report a successful stream only after its protocol's terminal success signal. For Chat, check its finish reason and `[DONE]`. For Responses, require `response.completed` and handle explicit failed or incomplete states. Treat a disconnect before completion as a failed request. Preserve `Retry-After` when present and prevent automatic replay of generation after partial output.
-4. Confirm the app's protocol behavior on a fixture. Use a separate, authorized bounded live acceptance request when provider execution is required. Revoke retired keys through the authorized local 9Router dashboard. [Live policy and fixtures](master-plan-v10-execution.md)
+   Require an exact single-model catalog, 401 for missing/invalid credentials, 405 for the wrong method, and 404 for an unsupported route. The checker verifies HTTPS, disables redirects, prints only status fields and exits nonzero on failure. A missing or extra catalog model fails preflight.
+4. While the new approved key is active, compare the read-only registry against the exact baseline scopes plus the one approved record, and check the authorized catalogs through public HTTPS. The `policy` suite checks the exact baseline registry before staging and after revocation. For a long-lived application key, update the approved registry expectations under its rollout before running baseline maintenance. In the quiet policy-check window, use the existing deny cases as the template for one wrong-model request with the app key and a forbidden route request. Require authorization or route rejection and zero upstream forwards in that window. Account for concurrent traffic before attributing a forward. [Policy check](../scripts/acceptance.py) · [Gateway runbook](runbook.md)
+
+### Application acceptance and revocation
+
+5. Rehearse the actual application workflow against a disposable mock with a synthetic key. For Chat streaming, check incremental content, the expected finish reason and `[DONE]`. For Responses, require `response.completed` and handle failed or incomplete states. Check valid tool argument JSON and the result round trip only when required by the app. Exercise cancellation, truthful error reporting and selected model identity. Honor `Retry-After` where present and prevent automatic replay after partial output.
+6. Once the app, model, entitlement, cost treatment and bounded request are approved, run acceptance from the actual application. Start with one short non-concurrent request with a small output cap and automatic retries off. Capture the route, selected model, terminal status, correlation time, timing and forward count without bodies or credentials. Test required streaming or tools only within the approved request budget. Stop if the app cannot preserve the contract. HTTP probes check service health and scope. App acceptance requires evidence from the app workflow itself.
+7. On failure or end of a temporary trial, turn off the exact application key in the protected local 9Router controls and restore the app's prior integration. Verify through public HTTPS that the retired key receives 401 for discovery and generation endpoints and its denials cause zero Bridge forwards. Verify the six baseline scopes and service health again. Inspect the policy window and native request log for unexpected attempts, and remove the retired key from the app's secret store. Use the guarded public origin for the live revocation result. [Pinned router access gate](https://github.com/decolua/9router/blob/d1970ac91561a8f4224cbfef7921dc8ee7dc7c5c/src/dashboardGuard.js)
 
 ## Windows installation and rollback
 

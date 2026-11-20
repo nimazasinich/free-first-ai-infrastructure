@@ -11,7 +11,8 @@ import urllib.request
 
 MODEL = "gemini-3.8-flash"
 PILOT_MODEL = "gemini-3.5-flash-lite"
-MODELS = frozenset({MODEL, PILOT_MODEL})
+PILOT_31_MODEL = "gemini-3.1-flash-lite"
+MODELS = frozenset({MODEL, PILOT_MODEL, PILOT_31_MODEL})
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):

@@ -7,6 +7,8 @@
 
 > **Primary objective:** Operate a reusable, secure, quota-aware, multi-model API platform for authorized applications, using verified eligible capacity without unintended metered API charges. Cursor is one client, not the architecture's purpose. Availability must be maximized within real entitlement and provider limits; it cannot be guaranteed without unlimited capacity.
 
+> **Current runtime checkpoint (2026-11-20 UTC).** Production runs the existing official AIStudio2API **v0.3.13** and clean 9Router **0.5.119**. The v0.3.12 references in the November 19 deployment baseline describe that earlier checkpoint. Use the [runbook](docs/runbook.md) for runtime verification and the [remaining-gaps register](docs/V10_REMAINING_GAPS.md) for current acceptance gates.
+
 ## 0. Decision hierarchy and evidence rules
 
 1. The owner's newest explicit decisions take precedence over older instructions in the repository. In particular, the clean official AIStudio2API v0.3.12 installation is now the baseline; do not restore removed historical source, databases, UI modifications, or support services.
